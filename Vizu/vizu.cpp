@@ -12,7 +12,7 @@ int main(int argc, char *argv[])
 {
 	std::string file = argv[1];
 	
-	std::size_t pos = file.find(".");
+	std::size_t pos = file.find_last_of(".");
 	std::string ext = file.substr(pos);
 	
 	std::cout << ext << std::endl;
