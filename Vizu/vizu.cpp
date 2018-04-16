@@ -3,6 +3,7 @@
 #include <pcl/point_types.h>
 #include <pcl/io/vtk_lib_io.h>
 #include <pcl/visualization/cloud_viewer.h>
+#include <pcl/visualization/pcl_visualizer.h>
 
 /*
  * Permet de visualiser les fichiers STL et PCD
@@ -51,13 +52,34 @@ int main(int argc, char *argv[])
 		<< mycloud->points[i].y << " " 
 		<< mycloud->points[i].z << std::endl;*/
 
-	pcl::visualization::CloudViewer viewer("Simple Cloud Viewer");
-	viewer.showCloud(mycloud);
+	//~ pcl::visualization::CloudViewer viewer("Simple Cloud Viewer");
+	//~ viewer.showCloud(mycloud);
 
-	while (!viewer.wasStopped())
+	//~ while (!viewer.wasStopped())
+	//~ {
+	//~ }
+	
+	pcl::visualization::PCLVisualizer viewer ("viewer");
+	// The color we will be using
+	float bckgr_gray_level = 0.0;  // Black
+	float txt_gray_lvl = 1.0 - bckgr_gray_level;
+	
+	pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZRGB> mycloud_color_h 
+		(mycloud,
+		 (int) 255 * txt_gray_lvl,
+		 (int) 255 * txt_gray_lvl, 
+		 (int) 255 * txt_gray_lvl);
+	viewer.addPointCloud (mycloud, mycloud_color_h, "mycloud");
+	viewer.setBackgroundColor (bckgr_gray_level, bckgr_gray_level, bckgr_gray_level);
+	viewer.setCameraPosition (-3.68332, 2.94092, 5.71266, 0.289847, 0.921947, -0.256907, 0);
+	viewer.setSize (1280, 1024);  // Visualiser window size
+	
+	// Display the visualiser
+	while (!viewer.wasStopped ())
 	{
+		viewer.spinOnce ();
 	}
-
+	
 	getchar();
 	return 0;
 }
