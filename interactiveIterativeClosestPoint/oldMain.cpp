@@ -4,6 +4,7 @@
 
 #include <pcl/io/ply_io.h>
 #include <pcl/point_types.h>
+#include <pcl/io/vtk_lib_io.h>
 #include <pcl/registration/icp.h>
 #include <pcl/visualization/pcl_visualizer.h>
 #include <pcl/console/time.h>   // TicToc
@@ -56,40 +57,68 @@ int main (int argc, char* argv[])
 	PointCloudT::Ptr cloud_in (new PointCloudT);  // Original point cloud
 	PointCloudT::Ptr cloud_tr (new PointCloudT);  // Transformed point cloud
 	PointCloudT::Ptr cloud_icp (new PointCloudT);  // ICP output point cloud
-
 	
-	/**
-	* We check the arguments of the program, set the number
-	* of initial ICP iterations and try to load the PLY file.
-	**/
-	// Checking program arguments
-	if (argc < 2)
-	{
-		printf ("Usage :\n");
-		printf ("\t\t%s file.ply number_of_ICP_iterations\n", argv[0]);
-		PCL_ERROR ("Provide one ply file.\n");
-		return (-1);
-	}
+	// vtk reader
+	// CLOUD 1
+	vtkSmartPointer<vtkSTLReader> reader = vtkSmartPointer<vtkSTLReader>::New();
+	vtkSmartPointer<vtkPolyData> polydata = reader->GetOutput();
+	reader->SetFileName("1.1 clean.stl");
+	reader->Update();
+	// convert vtk to pcl object
+	pcl::io::vtkPolyDataToPointCloud(polydata, *cloud_in);
+	
+	// CLOUD 2
+	reader = vtkSmartPointer<vtkSTLReader>::New();
+	polydata = reader->GetOutput();
+	reader->SetFileName("1.2.1 clean.stl");
+	reader->Update();
+	// convert vtk to pcl object
+	pcl::io::vtkPolyDataToPointCloud(polydata, *cloud_tr);
+	
+	//~ // Display clouds
+	//~ std::cout << cloud_in->points.size() << std::endl;
+	//~ for (size_t i = 0; i < cloud_in->points.size(); ++i)
+		//~ std::cout << cloud_in->points[i].x << " " 
+		//~ << cloud_in->points[i].y << " " 
+		//~ << cloud_in->points[i].z << std::endl;
+	//~ std::cout << cloud_tr->points.size() << std::endl;
+	//~ for (size_t i = 0; i < cloud_tr->points.size(); ++i)
+		//~ std::cout << cloud_tr->points[i].x << " " 
+		//~ << cloud_tr->points[i].y << " " 
+		//~ << cloud_tr->points[i].z << std::endl;
+	
+	
+	//~ /**
+	//~ * We check the arguments of the program, set the number
+	//~ * of initial ICP iterations and try to load the PLY file.
+	//~ **/
+	//~ // Checking program arguments
+	//~ if (argc < 2)
+	//~ {
+		//~ printf ("Usage :\n");
+		//~ printf ("\t\t%s file.ply number_of_ICP_iterations\n", argv[0]);
+		//~ PCL_ERROR ("Provide one ply file.\n");
+		//~ return (-1);
+	//~ }
 	int iterations = 1;  // Default number of ICP iterations
-	if (argc > 2)
+	if (argc > 1)
 	{
 		// If the user passed the number of iteration as an argument
-		iterations = atoi (argv[2]);
+		iterations = atoi (argv[1]);
 		if (iterations < 1)
 		{
 			PCL_ERROR ("Number of initial iterations must be >= 1\n");
 			return (-1);
 		}
 	}
-	
 	pcl::console::TicToc time;
 	time.tic ();
-	if (pcl::io::loadPLYFile (argv[1], *cloud_in) < 0)
-	{
-		PCL_ERROR ("Error loading cloud %s.\n", argv[1]);
-		return (-1);
-	}
-	std::cout << "\nLoaded file " << argv[1] << " (" << cloud_in->size () << " points) in " << time.toc () << " ms\n" << std::endl;
+	//~ if (pcl::io::loadPLYFile (argv[1], *cloud_in) < 0)
+	//~ {
+		//~ PCL_ERROR ("Error loading cloud %s.\n", argv[1]);
+		//~ return (-1);
+	//~ }
+	//~ std::cout << "\nLoaded file " << argv[1] << " (" << cloud_in->size () << " points) in " << time.toc () << " ms\n" << std::endl;
 	
 	
 	/**
@@ -115,7 +144,6 @@ int main (int argc, char* argv[])
 	print4x4Matrix (transformation_matrix);
 	// Executing the transformation
 	pcl::transformPointCloud (*cloud_in, *cloud_icp, transformation_matrix);
-	*cloud_tr = *cloud_icp;  // We backup cloud_icp into cloud_tr for later use
 	
 	
 	/**
@@ -136,7 +164,6 @@ int main (int argc, char* argv[])
 	icp.setInputTarget (cloud_in);
 	icp.align (*cloud_icp);
 	icp.setMaximumIterations (1);  // We set this variable to 1 for the next time we will call .align () function
-	std::cout << "Applied " << iterations << " ICP iteration(s) in " << time.toc () << " ms" << std::endl;
 	
 	
 	/**

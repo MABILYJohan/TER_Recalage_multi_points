@@ -70,7 +70,7 @@ int main (int argc, char* argv[])
 	// CLOUD 2
 	reader = vtkSmartPointer<vtkSTLReader>::New();
 	polydata = reader->GetOutput();
-	reader->SetFileName("1.2.1 clean.stl");
+	reader->SetFileName("ball.stl");
 	reader->Update();
 	// convert vtk to pcl object
 	pcl::io::vtkPolyDataToPointCloud(polydata, *cloud_tr);
@@ -100,19 +100,21 @@ int main (int argc, char* argv[])
 		//~ PCL_ERROR ("Provide one ply file.\n");
 		//~ return (-1);
 	//~ }
+	
 	int iterations = 1;  // Default number of ICP iterations
-	//~ if (argc > 2)
-	//~ {
-		//~ // If the user passed the number of iteration as an argument
-		//~ iterations = atoi (argv[2]);
-		//~ if (iterations < 1)
-		//~ {
-			//~ PCL_ERROR ("Number of initial iterations must be >= 1\n");
-			//~ return (-1);
-		//~ }
-	//~ }
+	if (argc > 1)
+	{
+		// If the user passed the number of iteration as an argument
+		iterations = atoi (argv[1]);
+		if (iterations < 1)
+		{
+			PCL_ERROR ("Number of initial iterations must be >= 1\n");
+			return (-1);
+		}
+	}
 	pcl::console::TicToc time;
 	time.tic ();
+	
 	//~ if (pcl::io::loadPLYFile (argv[1], *cloud_in) < 0)
 	//~ {
 		//~ PCL_ERROR ("Error loading cloud %s.\n", argv[1]);
@@ -144,7 +146,7 @@ int main (int argc, char* argv[])
 	print4x4Matrix (transformation_matrix);
 	// Executing the transformation
 	pcl::transformPointCloud (*cloud_in, *cloud_icp, transformation_matrix);
-	
+	//*cloud_tr = *cloud_icp;  // We backup cloud_icp into cloud_tr for later use
 	
 	/**
 	* This is the creation of the ICP object.
@@ -160,8 +162,8 @@ int main (int argc, char* argv[])
 	time.tic ();
 	pcl::IterativeClosestPoint<PointT, PointT> icp;
 	icp.setMaximumIterations (iterations);
-	icp.setInputSource (cloud_icp);
-	icp.setInputTarget (cloud_in);
+	icp.setInputSource (cloud_in);
+	icp.setInputTarget (cloud_tr);
 	icp.align (*cloud_icp);
 	icp.setMaximumIterations (1);  // We set this variable to 1 for the next time we will call .align () function
 	
@@ -175,7 +177,7 @@ int main (int argc, char* argv[])
 	if (icp.hasConverged ())
 	{
 		std::cout << "\nICP has converged, score is " << icp.getFitnessScore () << std::endl;
-		std::cout << "\nICP transformation " << iterations << " : cloud_icp -> cloud_in" << std::endl;
+		std::cout << "\nICP transformation " << iterations << " : cloud_in -> cloud_tr" << std::endl;
 		transformation_matrix = icp.getFinalTransformation ().cast<double>();
 		print4x4Matrix (transformation_matrix);
 	}
@@ -237,8 +239,8 @@ int main (int argc, char* argv[])
 	*  the integer iterations into a string.
 	**/
 	// Adding text descriptions in each viewport
-	viewer.addText ("White: Original point cloud\nGreen: Matrix transformed point cloud", 10, 15, 16, txt_gray_lvl, txt_gray_lvl, txt_gray_lvl, "icp_info_1", v1);
-	viewer.addText ("White: Original point cloud\nRed: ICP aligned point cloud", 10, 15, 16, txt_gray_lvl, txt_gray_lvl, txt_gray_lvl, "icp_info_2", v2);	
+	viewer.addText ("White: cloud_in\nGreen: cloud_tr", 10, 15, 16, txt_gray_lvl, txt_gray_lvl, txt_gray_lvl, "icp_info_1", v1);
+	viewer.addText ("White: cloud_in\nRed: ICP aligned point cloud", 10, 15, 16, txt_gray_lvl, txt_gray_lvl, txt_gray_lvl, "icp_info_2", v2);	
 	std::stringstream ss;
 	ss << iterations;
 	std::string iterations_cnt = "ICP iterations = " + ss.str ();
@@ -319,7 +321,7 @@ int main (int argc, char* argv[])
 			{
 				printf ("\033[11A");  // Go up 11 lines in terminal output.
 				printf ("\nICP has converged, score is %+.0e\n", icp.getFitnessScore ());
-				std::cout << "\nICP transformation " << ++iterations << " : cloud_icp -> cloud_in" << std::endl;
+				std::cout << "\nICP transformation " << ++iterations << " : cloud_in -> cloud_tr" << std::endl;
 				transformation_matrix *= icp.getFinalTransformation ().cast<double>();  // WARNING /!\ This is not accurate! For "educational" purpose only!
 				print4x4Matrix (transformation_matrix);  // Print the transformation between original pose and current pose
 				
