@@ -17,8 +17,8 @@ int main (int argc, char* argv[])
 	//~ pcl::PointCloud<pcl::PointXYZ>::Ptr target_cloud(new pcl::PointCloud<pcl::PointXYZ>);
 	//~ pcl::PointCloud<pcl::PointXYZ>::Ptr input_cloud(new pcl::PointCloud<pcl::PointXYZ>);
 	
-	//~ char file1[20] = "1.1 clean.stl";
-	//~ char file2[20] = "1.2.1 clean.stl";
+	char file1[20] = "1.1 clean.pcd";
+	char file2[20] = "1.2.1 clean.pcd";
 	
 	//~ // vtk reader
 	//~ vtkSmartPointer<vtkSTLReader> reader = vtkSmartPointer<vtkSTLReader>::New();
@@ -34,8 +34,8 @@ int main (int argc, char* argv[])
 	//~ std::cout << "Loaded " << input_cloud->size () << " data points from " << file2 << std::endl;
 	
 	
-	char file1[20] = "room_scan1.pcd";
-	char file2[20] = "room_scan2.pcd";
+	//~ char file1[20] = "room_scan1.pcd";
+	//~ char file2[20] = "room_scan2.pcd";
 	// Loading first scan of room.
 	pcl::PointCloud<pcl::PointXYZ>::Ptr target_cloud (new pcl::PointCloud<pcl::PointXYZ>);
 	if (pcl::io::loadPCDFile<pcl::PointXYZ> (file1, *target_cloud) == -1)
@@ -43,7 +43,7 @@ int main (int argc, char* argv[])
 		PCL_ERROR ("Couldn't read file %s \n", file1);
 		return (-1);
 	}
-	std::cout << "Loaded " << target_cloud->size () << " data points from room_scan1.pcd" << std::endl;
+	std::cout << "Loaded " << target_cloud->size () << " data points from " << file1 << std::endl;
 
 	// Loading second scan of room from new perspective.
 	pcl::PointCloud<pcl::PointXYZ>::Ptr input_cloud (new pcl::PointCloud<pcl::PointXYZ>);
@@ -52,7 +52,7 @@ int main (int argc, char* argv[])
 		PCL_ERROR ("Couldn't read file %s \n", file2);
 		return (-1);
 	}
-	std::cout << "Loaded " << input_cloud->size () << " data points from room_scan2.pcd" << std::endl;
+	std::cout << "Loaded " << input_cloud->size () << " data points from " << file2 << std::endl;
 	
 	
 	/**
