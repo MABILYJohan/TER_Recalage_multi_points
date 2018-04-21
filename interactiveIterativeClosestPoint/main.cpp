@@ -62,7 +62,7 @@ int main (int argc, char* argv[])
 	// CLOUD 1
 	vtkSmartPointer<vtkSTLReader> reader = vtkSmartPointer<vtkSTLReader>::New();
 	vtkSmartPointer<vtkPolyData> polydata = reader->GetOutput();
-	reader->SetFileName("0.stl");
+	reader->SetFileName("1.1 clean.stl");
 	reader->Update();
 	// convert vtk to pcl object
 	pcl::io::vtkPolyDataToPointCloud(polydata, *cloud_in);
@@ -70,7 +70,7 @@ int main (int argc, char* argv[])
 	// CLOUD 2
 	reader = vtkSmartPointer<vtkSTLReader>::New();
 	polydata = reader->GetOutput();
-	reader->SetFileName("4.stl");
+	reader->SetFileName("1.2.1 clean.stl");
 	reader->Update();
 	// convert vtk to pcl object
 	pcl::io::vtkPolyDataToPointCloud(polydata, *cloud_tr);
@@ -131,21 +131,21 @@ int main (int argc, char* argv[])
 	* cloud_tr and cloud_icp contains the translated/rotated point cloud.
 	* cloud_tr is a backup we will use for display (green point cloud).
 	**/
-	//~ // Defining a rotation matrix and translation vector
-	//~ Eigen::Matrix4d transformation_matrix = Eigen::Matrix4d::Identity ();
-	//~ // A rotation matrix (see https://en.wikipedia.org/wiki/Rotation_matrix)
-	//~ double theta = M_PI / 8;  // The angle of rotation in radians
-	//~ transformation_matrix (0, 0) = cos (theta);
-	//~ transformation_matrix (0, 1) = -sin (theta);
-	//~ transformation_matrix (1, 0) = sin (theta);
-	//~ transformation_matrix (1, 1) = cos (theta);
-	//~ // A translation on Z axis (0.4 meters)
-	//~ transformation_matrix (2, 3) = 0.4;
-	//~ // Display in terminal the transformation matrix
-	//~ std::cout << "Applying this rigid transformation to: cloud_in -> cloud_icp" << std::endl;
-	//~ print4x4Matrix (transformation_matrix);
-	//~ // Executing the transformation
-	//~ //pcl::transformPointCloud (*cloud_in, *cloud_icp, transformation_matrix);
+	// Defining a rotation matrix and translation vector
+	Eigen::Matrix4d transformation_matrix = Eigen::Matrix4d::Identity ();
+	// A rotation matrix (see https://en.wikipedia.org/wiki/Rotation_matrix)
+	double theta = M_PI / 8;  // The angle of rotation in radians
+	transformation_matrix (0, 0) = cos (theta);
+	transformation_matrix (0, 1) = -sin (theta);
+	transformation_matrix (1, 0) = sin (theta);
+	transformation_matrix (1, 1) = cos (theta);
+	// A translation on Z axis (0.4 meters)
+	transformation_matrix (2, 3) = 0.4;
+	// Display in terminal the transformation matrix
+	std::cout << "Applying this rigid transformation to: cloud_in -> cloud_icp" << std::endl;
+	print4x4Matrix (transformation_matrix);
+	// Executing the transformation
+	pcl::transformPointCloud (*cloud_in, *cloud_icp, transformation_matrix);
 	//*cloud_tr = *cloud_icp;  // We backup cloud_icp into cloud_tr for later use
 	
 	/**
@@ -178,8 +178,8 @@ int main (int argc, char* argv[])
 	{
 		std::cout << "\nICP has converged, score is " << icp.getFitnessScore () << std::endl;
 		std::cout << "\nICP transformation " << iterations << " : cloud_in -> cloud_tr" << std::endl;
-		//~ transformation_matrix = icp.getFinalTransformation ().cast<double>();
-		//~ print4x4Matrix (transformation_matrix);
+		transformation_matrix = icp.getFinalTransformation ().cast<double>();
+		print4x4Matrix (transformation_matrix);
 	}
 	else
 	{
@@ -322,8 +322,8 @@ int main (int argc, char* argv[])
 				printf ("\033[11A");  // Go up 11 lines in terminal output.
 				printf ("\nICP has converged, score is %+.0e\n", icp.getFitnessScore ());
 				std::cout << "\nICP transformation " << ++iterations << " : cloud_in -> cloud_tr" << std::endl;
-				//~ transformation_matrix *= icp.getFinalTransformation ().cast<double>();  // WARNING /!\ This is not accurate! For "educational" purpose only!
-				//~ print4x4Matrix (transformation_matrix);  // Print the transformation between original pose and current pose
+				transformation_matrix *= icp.getFinalTransformation ().cast<double>();  // WARNING /!\ This is not accurate! For "educational" purpose only!
+				print4x4Matrix (transformation_matrix);  // Print the transformation between original pose and current pose
 				
 				ss.str ("");
 				ss << iterations;
