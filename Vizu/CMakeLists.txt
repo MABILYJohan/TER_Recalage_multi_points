@@ -11,3 +11,6 @@ add_definitions(${PCL_DEFINITIONS})
 add_executable(vizu vizu.cpp )
 target_link_libraries(vizu ${PCL_LIBRARIES})
 
+add_executable(vizuDS vizuDownSample.cpp )
+target_link_libraries(vizuDS ${PCL_LIBRARIES})
+
