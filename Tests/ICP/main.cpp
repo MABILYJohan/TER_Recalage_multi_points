@@ -74,6 +74,12 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr loadCloud (char *fileName)
 
 int main (int argc, char *argv[])
 {
+	if (argv[1] != NULL && strcmp(argv[1], "-h")==0) {
+		std::cout << " \nUsage  " << std::endl;
+		printf ("%s file1.stl file2.stl [maxCorDist] [iterations] [epsilon] [difDistEpsilon]\n\n", argv[0]);
+		exit (0);
+	}
+	
 	pcl::console::print_highlight ("Loading point clouds...\n");
 	// Checking program arguments
 	if (argc-1 < 2)
