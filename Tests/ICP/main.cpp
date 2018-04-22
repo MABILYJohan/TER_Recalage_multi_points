@@ -71,6 +71,16 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr loadCloud (char *fileName)
 	return myCloud;
 }
 
+pcl::PointCloud<pcl::PointXYZ>::Ptr downSample_cloud (pcl::PointCloud<pcl::PointXYZ>::Ptr originalCloud)
+{
+	pcl::PointCloud<pcl::PointXYZ>::Ptr reductCloud (new pcl::PointCloud<pcl::PointXYZ>);
+	pcl::VoxelGrid<pcl::PointXYZ> grid;
+	grid.setLeafSize (0.5, 0.5, 0.5);
+	grid.setInputCloud (originalCloud);
+	grid.filter (*reductCloud);
+	
+	return reductCloud;
+}
 
 int main (int argc, char *argv[])
 {
@@ -100,17 +110,8 @@ int main (int argc, char *argv[])
 	// Downsample for consistency and speed
 	// \note enable this for large datasets
 	pcl::console::print_highlight ("DownSampling...\n");
-	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_source (new pcl::PointCloud<pcl::PointXYZ>);
-	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_target (new pcl::PointCloud<pcl::PointXYZ>);
-	pcl::VoxelGrid<pcl::PointXYZ> grid;
-	
-	grid.setLeafSize (0.5, 0.5, 0.5);
-	grid.setInputCloud (BIGcloud_source);
-	grid.filter (*cloud_source);
-	
-	grid.setInputCloud (BIGcloud_target);
-	grid.filter (*cloud_target);
-	
+	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_source = downSample_cloud (BIGcloud_source);
+	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_target = downSample_cloud (BIGcloud_target);
 	
 	
 	
