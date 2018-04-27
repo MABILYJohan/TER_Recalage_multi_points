@@ -131,7 +131,7 @@ int main (int argc, char *argv[])
 {
 	if (argv[1] != NULL && strcmp(argv[1], "-h")==0) {
 		std::cout << " \nUsage  " << std::endl;
-		printf ("%s file1.stl file2.stl\n\n", argv[0]);
+		printf ("%s file1 file2 [ksearch]\n\n", argv[0]);
 		exit (0);
 	}
 	
@@ -140,7 +140,7 @@ int main (int argc, char *argv[])
 	if (argc-1 < 2)
 	{
 		printf ("Usage :\n");
-		printf ("\t\t%s file1.stl file2.stl\n", argv[0]);
+		printf ("\t\t%s file1 file2 [ksearch]\n", argv[0]);
 		PCL_ERROR ("Provide two stl files.\n");
 		return (-1);
 	}
@@ -176,6 +176,7 @@ int main (int argc, char *argv[])
 	NormalEstimation<PointNormal, PointNormal> norm_est;
 	norm_est.setSearchMethod (search::KdTree<PointNormal>::Ptr (new search::KdTree<PointNormal>));
 	int kSearch = 10;
+	if (argv[3]!=NULL && atoi(argv[3])>0)	kSearch = atoi(argv[3]);
 	norm_est.setKSearch (kSearch);
 	std::cout << " kSearch (" << kSearch << ")\n" <<  std::endl;
 	norm_est.setInputCloud (tgt);
