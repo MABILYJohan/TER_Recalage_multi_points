@@ -8,15 +8,15 @@
 
 #include <pcl/io/ply_io.h>
 #include <pcl/point_types.h>
-#include <pcl/io/vtk_lib_io.h>
+//~ #include <pcl/io/vtk_lib_io.h>
 #include <pcl/registration/icp.h>
-#include <pcl/visualization/pcl_visualizer.h>
+//~ #include <pcl/visualization/pcl_visualizer.h>
 //~ #include <pcl/console/time.h>   // TicToc
 
 #include <pcl/io/pcd_io.h>
 
-#include <pcl/filters/voxel_grid.h>
-
+//~ #include <pcl/filters/voxel_grid.h>
+#include "utils_pcl.h"
 
 
 /**
@@ -34,59 +34,59 @@ void print4x4Matrix (const Eigen::Matrix4f & matrix)
 }
 
 
-pcl::PointCloud<pcl::PointXYZ>::Ptr loadCloud (char *fileName)
-{
-	pcl::PointCloud<pcl::PointXYZ>::Ptr myCloud (new pcl::PointCloud<pcl::PointXYZ>);
+//~ pcl::PointCloud<pcl::PointXYZ>::Ptr loadCloud (char *fileName)
+//~ {
+	//~ pcl::PointCloud<pcl::PointXYZ>::Ptr myCloud (new pcl::PointCloud<pcl::PointXYZ>);
 	
-	std::string file = fileName;
-	std::size_t pos = file.find_last_of(".");
-	std::string ext = file.substr(pos);
-	std::cout << ext << std::endl;
+	//~ std::string file = fileName;
+	//~ std::size_t pos = file.find_last_of(".");
+	//~ std::string ext = file.substr(pos);
+	//~ std::cout << ext << std::endl;
 	
-	if(ext.compare(".stl") == 0) // Si c'est un fichier au format STL
-	{
-		// vtk reader
-		vtkSmartPointer<vtkSTLReader> reader = vtkSmartPointer<vtkSTLReader>::New();
-		vtkSmartPointer<vtkPolyData> polydata = reader->GetOutput();
-		reader->SetFileName(fileName);
-		reader->Update();
+	//~ if(ext.compare(".stl") == 0) // Si c'est un fichier au format STL
+	//~ {
+		//~ // vtk reader
+		//~ vtkSmartPointer<vtkSTLReader> reader = vtkSmartPointer<vtkSTLReader>::New();
+		//~ vtkSmartPointer<vtkPolyData> polydata = reader->GetOutput();
+		//~ reader->SetFileName(fileName);
+		//~ reader->Update();
 
-		// convert vtk to pcl object
-		pcl::io::vtkPolyDataToPointCloud(polydata, *myCloud);
-	}
-	else if(ext.compare(".pcd")==0) // Si c'est un fichier au format PCD
-	{
-		if (pcl::io::loadPCDFile<pcl::PointXYZ> (file, *myCloud) == -1) //* load the file
-		{
-			PCL_ERROR ("Couldn't read file test_pcd.pcd \n");
-			exit (1);
-		}
-	}
-	else
-	{
-		std::cout << "Les format supportés sont STL et PCD" << std::endl;
-		exit(1);
-	}
+		//~ // convert vtk to pcl object
+		//~ pcl::io::vtkPolyDataToPointCloud(polydata, *myCloud);
+	//~ }
+	//~ else if(ext.compare(".pcd")==0) // Si c'est un fichier au format PCD
+	//~ {
+		//~ if (pcl::io::loadPCDFile<pcl::PointXYZ> (file, *myCloud) == -1) //* load the file
+		//~ {
+			//~ PCL_ERROR ("Couldn't read file test_pcd.pcd \n");
+			//~ exit (1);
+		//~ }
+	//~ }
+	//~ else
+	//~ {
+		//~ std::cout << "Les format supportés sont STL et PCD" << std::endl;
+		//~ exit(1);
+	//~ }
 	
-	return myCloud;
-}
+	//~ return myCloud;
+//~ }
 
-pcl::PointCloud<pcl::PointXYZ>::Ptr downSample_cloud (pcl::PointCloud<pcl::PointXYZ>::Ptr originalCloud)
-{
-	pcl::PointCloud<pcl::PointXYZ>::Ptr reductCloud (new pcl::PointCloud<pcl::PointXYZ>);
-	pcl::VoxelGrid<pcl::PointXYZ> grid;
-	grid.setLeafSize (0.5, 0.5, 0.5);
-	grid.setInputCloud (originalCloud);
-	grid.filter (*reductCloud);
+//~ pcl::PointCloud<pcl::PointXYZ>::Ptr downSample_cloud (pcl::PointCloud<pcl::PointXYZ>::Ptr originalCloud)
+//~ {
+	//~ pcl::PointCloud<pcl::PointXYZ>::Ptr reductCloud (new pcl::PointCloud<pcl::PointXYZ>);
+	//~ pcl::VoxelGrid<pcl::PointXYZ> grid;
+	//~ grid.setLeafSize (0.5, 0.5, 0.5);
+	//~ grid.setInputCloud (originalCloud);
+	//~ grid.filter (*reductCloud);
 	
-	return reductCloud;
-}
+	//~ return reductCloud;
+//~ }
 
 int main (int argc, char *argv[])
 {
 	if (argv[1] != NULL && strcmp(argv[1], "-h")==0) {
 		std::cout << " \nUsage  " << std::endl;
-		printf ("%s file1.stl file2.stl [maxCorDist] [iterations] [epsilon] [difDistEpsilon]\n\n", argv[0]);
+		printf ("%s file1.stl/pcd file2.stl/pcd [maxCorDist] [iterations] [epsilon] [difDistEpsilon]\n\n", argv[0]);
 		exit (0);
 	}
 	
@@ -95,8 +95,8 @@ int main (int argc, char *argv[])
 	if (argc-1 < 2)
 	{
 		printf ("Usage :\n");
-		printf ("\t\t%s file1.stl file2.stl [maxCorDist] [iterations] [epsilon] [difDistEpsilon]\n", argv[0]);
-		PCL_ERROR ("Provide two stl files.\n");
+		printf ("\t\t%s file1.stl/pcd file2.stl/pcd [maxCorDist] [iterations] [epsilon] [difDistEpsilon]\n", argv[0]);
+		PCL_ERROR ("Provide two stl or pcd files.\n");
 		return (-1);
 	}
 	std::cout << " loading cloud src " << std::endl;
@@ -104,22 +104,28 @@ int main (int argc, char *argv[])
 	std::cout << " loading cloud target " << std::endl;
 	pcl::PointCloud<pcl::PointXYZ>::Ptr BIGcloud_target = loadCloud(argv[2]);
 	
-	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_source_registered (new pcl::PointCloud<pcl::PointXYZ>); 
+	pcl::PointCloud<pcl::PointXYZ> cloud_source_registered; 
 	
 	//
 	// Downsample for consistency and speed
 	// \note enable this for large datasets
 	pcl::console::print_highlight ("DownSampling...\n");
-	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_source = downSample_cloud (BIGcloud_source);
-	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_target = downSample_cloud (BIGcloud_target);
+	pcl::PointCloud<pcl::PointXYZ> cloud_source = downSample_cloud (BIGcloud_source);
+	pcl::PointCloud<pcl::PointXYZ> cloud_target = downSample_cloud (BIGcloud_target);
 	
 	
 	
 	pcl::console::print_highlight ("iterative closest point...\n");
 	pcl::IterativeClosestPoint<pcl::PointXYZ, pcl::PointXYZ> icp;
+	
+	PointCloud<PointXYZ>::Ptr src (new PointCloud<PointXYZ>);
+	copyPointCloud (cloud_source, *src);
+	PointCloud<PointXYZ>::Ptr tgt (new PointCloud<PointXYZ>);
+	copyPointCloud (cloud_target, *tgt);
+	
 	// Set the input source and target
-	icp.setInputSource (cloud_source);
-	icp.setInputTarget (cloud_target);
+	icp.setInputSource (src);
+	icp.setInputTarget (tgt);
 	
 	// Set the max correspondence distance to 5cm (e.g., correspondences with higher distances will be ignored)
 	double maxCorDist = 0.05;
@@ -142,7 +148,7 @@ int main (int argc, char *argv[])
 	icp.setEuclideanFitnessEpsilon (difDistEpsilon);
 	
 	// Perform the alignment
-	icp.align (*cloud_source_registered);
+	icp.align (cloud_source_registered);
 	if (!icp.hasConverged ()) {
 		PCL_ERROR ("\nICP has not converged.\n");
 		return (-1);
@@ -155,54 +161,8 @@ int main (int argc, char *argv[])
 	std::cout << " Matrix " << std::endl;
 	print4x4Matrix (transformation);
 	
+	vizu (cloud_source, cloud_target, cloud_source_registered);
 	
-	
-	// Visualization
-	pcl::visualization::PCLVisualizer viewer ("ICP");
-	
-	// Create two vertically separated viewports
-	int v1 (0);
-	int v2 (1);
-	viewer.createViewPort (0.0, 0.0, 0.5, 1.0, v1);
-	viewer.createViewPort (0.5, 0.0, 1.0, 1.0, v2);
-	
-	float bckgr_gray_level = 0.0;  // Black
-	float txt_gray_lvl = 1.0 - bckgr_gray_level;
-	// Original point cloud (source) is white
-	pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> cloud_source_color_h 
-		(cloud_source,
-		 (int) 255 * txt_gray_lvl,
-		 (int) 255 * txt_gray_lvl, 
-		 (int) 255 * txt_gray_lvl);
-	viewer.addPointCloud (cloud_source, cloud_source_color_h, "cloud_source v1", v1 );
-	viewer.addPointCloud (cloud_source, cloud_source_color_h, "cloud_source v2", v2);
-	
-	// target cloud is green
-	pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> cloud_target_color_h (cloud_target, 20, 180, 20);
-	viewer.addPointCloud (cloud_target, cloud_target_color_h, "cloud_target_v1", v1);
-	
-	// ICP aligned point cloud is red
-	pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> cloud_icp_color_h (cloud_source_registered, 180, 20, 20);
-	viewer.addPointCloud (cloud_source_registered, cloud_icp_color_h, "cloud_icp_v2", v2);
-	
-	// Adding text descriptions in each viewport
-	viewer.addText ("White: cloud source\nGreen: cloud target", 10, 15, 16, txt_gray_lvl, txt_gray_lvl, txt_gray_lvl, "icp_info_1", v1);
-	viewer.addText ("White: cloud source\nRed: ICP aligned point cloud", 10, 15, 16, txt_gray_lvl, txt_gray_lvl, txt_gray_lvl, "icp_info_2", v2);	
-	std::stringstream ss;
-	ss << iterations;
-	std::string iterations_cnt = "ICP iterations = " + ss.str ();
-	viewer.addText (iterations_cnt, 10, 60, 16, txt_gray_lvl, txt_gray_lvl, txt_gray_lvl, "iterations_cnt", v2);
-	
-	
-	// Set background color
-	viewer.setBackgroundColor (bckgr_gray_level, bckgr_gray_level, bckgr_gray_level, v1);
-	viewer.setBackgroundColor (bckgr_gray_level, bckgr_gray_level, bckgr_gray_level, v2);
-	
-	// Display the visualiser
-	while (!viewer.wasStopped ())
-	{
-		viewer.spinOnce ();
-	}
 	
 	return 0;
 }
