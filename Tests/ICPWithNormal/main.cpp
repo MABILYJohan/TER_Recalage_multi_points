@@ -8,13 +8,13 @@
 
 #include <pcl/io/ply_io.h>
 #include <pcl/point_types.h>
-#include <pcl/io/vtk_lib_io.h>
+//~ #include <pcl/io/vtk_lib_io.h>
 #include <pcl/registration/registration.h>
 #include <pcl/registration/icp.h>
-#include <pcl/visualization/pcl_visualizer.h>
+//~ #include <pcl/visualization/pcl_visualizer.h>
 //#include <pcl/console/time.h>   // TicToc
 #include <pcl/io/pcd_io.h>
-#include <pcl/filters/voxel_grid.h>
+//~ #include <pcl/filters/voxel_grid.h>
 
 
 //~ #include <gtest/gtest.h>
@@ -26,6 +26,7 @@
 
 #include <pcl/features/normal_3d.h>
 
+#include "utils_pcl.h"
 
 using namespace pcl;
 using namespace pcl::io;
@@ -64,55 +65,6 @@ void print4x4Matrix (const Eigen::Matrix4f & matrix)
 }
 
 
-PointCloud<PointXYZ>::Ptr loadCloud (char *fileName)
-{
-	PointCloud<PointXYZ>::Ptr myCloud (new PointCloud<PointXYZ>);
-	
-	std::string file = fileName;
-	std::size_t pos = file.find_last_of(".");
-	std::string ext = file.substr(pos);
-	std::cout << ext << std::endl;
-	
-	if(ext.compare(".stl") == 0) // Si c'est un fichier au format STL
-	{
-		// vtk reader
-		vtkSmartPointer<vtkSTLReader> reader = vtkSmartPointer<vtkSTLReader>::New();
-		vtkSmartPointer<vtkPolyData> polydata = reader->GetOutput();
-		reader->SetFileName(fileName);
-		reader->Update();
-
-		// convert vtk to pcl object
-		io::vtkPolyDataToPointCloud(polydata, *myCloud);
-	}
-	else if(ext.compare(".pcd")==0) // Si c'est un fichier au format PCD
-	{
-		if (io::loadPCDFile<PointXYZ> (file, *myCloud) == -1) //* load the file
-		{
-			PCL_ERROR ("Couldn't read file test_pcd.pcd \n");
-			exit (1);
-		}
-	}
-	else
-	{
-		std::cout << "Les format supportés sont STL et PCD" << std::endl;
-		exit(1);
-	}
-	
-	return myCloud;
-}
-
-PointCloud<PointXYZ> downSample_cloud (PointCloud<PointXYZ>::Ptr originalCloud)
-{
-	PointCloud<PointXYZ> reductCloud;
-	VoxelGrid<PointXYZ> grid;
-	grid.setLeafSize (1, 1, 1);
-	grid.setInputCloud (originalCloud);
-	grid.filter (reductCloud);
-	
-	return reductCloud;
-}
-
-
 void sampleRandomTransform (Eigen::Affine3f &trans, float max_angle, float max_trans)
 {
 	srand(0);
@@ -131,7 +83,7 @@ int main (int argc, char *argv[])
 {
 	if (argv[1] != NULL && strcmp(argv[1], "-h")==0) {
 		std::cout << " \nUsage  " << std::endl;
-		printf ("%s file1 file2 [ksearch]\n\n", argv[0]);
+		printf ("%s file1.stl/pcd file2.stl/pcd [ksearch]\n\n", argv[0]);
 		exit (0);
 	}
 	
@@ -140,8 +92,8 @@ int main (int argc, char *argv[])
 	if (argc-1 < 2)
 	{
 		printf ("Usage :\n");
-		printf ("\t\t%s file1 file2 [ksearch]\n", argv[0]);
-		PCL_ERROR ("Provide two stl files.\n");
+		printf ("\t\t%s file1.stl/pcd file2.stl/pcd [ksearch]\n", argv[0]);
+		PCL_ERROR ("Provide two stl or pcd files.\n");
 		return (-1);
 	}
 	std::cout << " loading cloud src " << std::endl;
@@ -246,59 +198,11 @@ int main (int argc, char *argv[])
 	
 	
 	//~ // Visualization
-	pcl::visualization::PCLVisualizer viewer ("ICPWNormals");
 	
-	PointCloud<PointXYZ>::Ptr cloud_source_vizu (new PointCloud<PointXYZ>);
-	PointCloud<PointXYZ>::Ptr cloud_target_vizu (new PointCloud<PointXYZ>);
-	PointCloud<PointXYZ>::Ptr cloud_output_vizu (new PointCloud<PointXYZ>);
+	PointCloud<PointXYZ> cloud_output;
+	copyPointCloud (output, cloud_output);
 	
-	copyPointCloud (cloud_source, *cloud_source_vizu);
-	copyPointCloud (cloud_target, *cloud_target_vizu);
-	copyPointCloud (output, *cloud_output_vizu);
-	
-	//~ // Create two vertically separated viewports
-	int v1 (0);
-	int v2 (1);
-	viewer.createViewPort (0.0, 0.0, 0.5, 1.0, v1);
-	viewer.createViewPort (0.5, 0.0, 1.0, 1.0, v2);
-	
-	float bckgr_gray_level = 0.0;  // Black
-	float txt_gray_lvl = 1.0 - bckgr_gray_level;
-	// Original point cloud (source) is white
-	pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> cloud_source_color_h 
-		(cloud_source_vizu,
-		 (int) 255 * txt_gray_lvl,
-		 (int) 255 * txt_gray_lvl, 
-		 (int) 255 * txt_gray_lvl);
-	viewer.addPointCloud (cloud_source_vizu, cloud_source_color_h, "cloud_source v1", v1 );
-	viewer.addPointCloud (cloud_source_vizu, cloud_source_color_h, "cloud_source v2", v2);
-	
-	//~ // target cloud is green
-	pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> cloud_target_color_h (cloud_target_vizu, 20, 180, 20);
-	viewer.addPointCloud (cloud_target_vizu, cloud_target_color_h, "cloud_target_v1", v1);
-	
-	// ICP aligned point cloud is red
-	pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> cloud_reg_color_h (cloud_output_vizu, 180, 20, 20);
-	viewer.addPointCloud (cloud_output_vizu, cloud_reg_color_h, "cloud_icp_v2", v2);
-	
-	// Adding text descriptions in each viewport
-	viewer.addText ("White: cloud source\nGreen: cloud target", 10, 15, 16, txt_gray_lvl, txt_gray_lvl, txt_gray_lvl, "icp_info_1", v1);
-	viewer.addText ("White: cloud source\nRed: ICP aligned point cloud", 10, 15, 16, txt_gray_lvl, txt_gray_lvl, txt_gray_lvl, "icp_info_2", v2);	
-	std::stringstream ss;
-	ss << maxIterations;
-	std::string iterations_cnt = "ICP iterations = " + ss.str ();
-	viewer.addText (iterations_cnt, 10, 60, 16, txt_gray_lvl, txt_gray_lvl, txt_gray_lvl, "iterations_cnt", v2);
-	
-	
-	//~ // Set background color
-	viewer.setBackgroundColor (bckgr_gray_level, bckgr_gray_level, bckgr_gray_level, v1);
-	viewer.setBackgroundColor (bckgr_gray_level, bckgr_gray_level, bckgr_gray_level, v2);
-	
-	//~ // Display the visualiser
-	while (!viewer.wasStopped ())
-	{
-		viewer.spinOnce ();
-	}
+	vizu (cloud_source, cloud_target, cloud_output);
 	
 	return 0;
 }
