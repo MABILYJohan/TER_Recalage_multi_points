@@ -5,11 +5,17 @@
 #include <pcl/io/vtk_lib_io.h>
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/visualization/pcl_visualizer.h>
+#include <pcl/console/time.h>   // TicToc
+#include <pcl/console/print.h>
+#include <pcl/console/parse.h>
+#include <pcl/search/kdtree.h>
 
 
+using namespace std;
 using namespace pcl;
 using namespace pcl::io;
-using namespace std;
+using namespace pcl::console;
+using namespace pcl::search;
 
 
 PointCloud<PointXYZ>::Ptr loadCloud (char *fileName)
@@ -53,19 +59,70 @@ PointCloud<PointXYZ> downSample_cloud (PointCloud<PointXYZ>::Ptr originalCloud)
 {
 	PointCloud<PointXYZ> reductCloud;
 	VoxelGrid<PointXYZ> grid;
-	grid.setLeafSize (0.5, 0.5, 0.5);
+	grid.setLeafSize (1.5, 1.5, 1.5);
 	grid.setInputCloud (originalCloud);
 	grid.filter (reductCloud);
 	
 	return reductCloud;
 }
 
-void vizu (PointCloud<PointXYZ> cloud_source, 
-			PointCloud<PointXYZ> cloud_target,
-			PointCloud<PointXYZ> cloud_icp)
+void compute (PointCloud<PointXYZ> &cloud_a, PointCloud<PointXYZ> &cloud_b)
+{
+	typedef PointXYZ PointType;
+	typedef PointCloud<PointXYZ> Cloud;
+	// Estimate
+	TicToc tt;
+	tt.tic ();
+	
+	print_highlight (stderr, "Computing ");
+	
+	// compare A to B
+	pcl::search::KdTree<PointType> tree_b;
+	tree_b.setInputCloud (cloud_b.makeShared ());
+	float max_dist_a = -std::numeric_limits<float>::max ();
+	for (size_t i = 0; i < cloud_a.points.size (); ++i)
+	{
+		std::vector<int> indices (1);
+		std::vector<float> sqr_distances (1);
+		
+		tree_b.nearestKSearch (cloud_a.points[i], 1, indices, sqr_distances);
+		if (sqr_distances[0] > max_dist_a)
+			max_dist_a = sqr_distances[0];
+	}
+	
+	// compare B to A
+	pcl::search::KdTree<PointType> tree_a;
+	tree_a.setInputCloud (cloud_a.makeShared ());
+	float max_dist_b = -std::numeric_limits<float>::max ();
+	for (size_t i = 0; i < cloud_b.points.size (); ++i)
+	{
+	std::vector<int> indices (1);
+	std::vector<float> sqr_distances (1);
+	
+	tree_a.nearestKSearch (cloud_b.points[i], 1, indices, sqr_distances);
+	if (sqr_distances[0] > max_dist_b)
+		max_dist_b = sqr_distances[0];
+	}
+	
+	max_dist_a = std::sqrt (max_dist_a);
+	max_dist_b = std::sqrt (max_dist_b);
+	
+	float dist = std::max (max_dist_a, max_dist_b);
+	
+	print_info ("[done, "); print_value ("%g", tt.toc ()); print_info (" ms : ");
+	print_info ("A->B: "); print_value ("%f", max_dist_a);
+	print_info (", B->A: "); print_value ("%f", max_dist_b);
+	print_info (", Hausdorff Distance: "); print_value ("%f", dist);
+	print_info (" ]\n");
+}
+
+pcl::visualization::PCLVisualizer vizu (PointCloud<PointXYZ> cloud_source, 
+										PointCloud<PointXYZ> cloud_target,
+										PointCloud<PointXYZ> cloud_icp,
+										char *name)
 {
 	// Visualization
-	pcl::visualization::PCLVisualizer viewer ("ICP");
+	pcl::visualization::PCLVisualizer viewer (name);
 	
 	PointCloud<PointXYZ>::Ptr cloud_source_vizu (new PointCloud<PointXYZ>);
 	copyPointCloud (cloud_source, *cloud_source_vizu);
@@ -117,6 +174,8 @@ void vizu (PointCloud<PointXYZ> cloud_source,
 	{
 		viewer.spinOnce ();
 	}
+	
+	return viewer;
 }
 
 

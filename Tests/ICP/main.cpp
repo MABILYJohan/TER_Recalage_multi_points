@@ -8,14 +8,11 @@
 
 #include <pcl/io/ply_io.h>
 #include <pcl/point_types.h>
-//~ #include <pcl/io/vtk_lib_io.h>
 #include <pcl/registration/icp.h>
-//~ #include <pcl/visualization/pcl_visualizer.h>
-//~ #include <pcl/console/time.h>   // TicToc
+#include <pcl/console/time.h>   // TicToc
 
 #include <pcl/io/pcd_io.h>
 
-//~ #include <pcl/filters/voxel_grid.h>
 #include "utils_pcl.h"
 
 
@@ -33,54 +30,6 @@ void print4x4Matrix (const Eigen::Matrix4f & matrix)
   printf ("t = < %6.3f, %6.3f, %6.3f >\n\n", matrix (0, 3), matrix (1, 3), matrix (2, 3));
 }
 
-
-//~ pcl::PointCloud<pcl::PointXYZ>::Ptr loadCloud (char *fileName)
-//~ {
-	//~ pcl::PointCloud<pcl::PointXYZ>::Ptr myCloud (new pcl::PointCloud<pcl::PointXYZ>);
-	
-	//~ std::string file = fileName;
-	//~ std::size_t pos = file.find_last_of(".");
-	//~ std::string ext = file.substr(pos);
-	//~ std::cout << ext << std::endl;
-	
-	//~ if(ext.compare(".stl") == 0) // Si c'est un fichier au format STL
-	//~ {
-		//~ // vtk reader
-		//~ vtkSmartPointer<vtkSTLReader> reader = vtkSmartPointer<vtkSTLReader>::New();
-		//~ vtkSmartPointer<vtkPolyData> polydata = reader->GetOutput();
-		//~ reader->SetFileName(fileName);
-		//~ reader->Update();
-
-		//~ // convert vtk to pcl object
-		//~ pcl::io::vtkPolyDataToPointCloud(polydata, *myCloud);
-	//~ }
-	//~ else if(ext.compare(".pcd")==0) // Si c'est un fichier au format PCD
-	//~ {
-		//~ if (pcl::io::loadPCDFile<pcl::PointXYZ> (file, *myCloud) == -1) //* load the file
-		//~ {
-			//~ PCL_ERROR ("Couldn't read file test_pcd.pcd \n");
-			//~ exit (1);
-		//~ }
-	//~ }
-	//~ else
-	//~ {
-		//~ std::cout << "Les format supportés sont STL et PCD" << std::endl;
-		//~ exit(1);
-	//~ }
-	
-	//~ return myCloud;
-//~ }
-
-//~ pcl::PointCloud<pcl::PointXYZ>::Ptr downSample_cloud (pcl::PointCloud<pcl::PointXYZ>::Ptr originalCloud)
-//~ {
-	//~ pcl::PointCloud<pcl::PointXYZ>::Ptr reductCloud (new pcl::PointCloud<pcl::PointXYZ>);
-	//~ pcl::VoxelGrid<pcl::PointXYZ> grid;
-	//~ grid.setLeafSize (0.5, 0.5, 0.5);
-	//~ grid.setInputCloud (originalCloud);
-	//~ grid.filter (*reductCloud);
-	
-	//~ return reductCloud;
-//~ }
 
 int main (int argc, char *argv[])
 {
@@ -161,8 +110,11 @@ int main (int argc, char *argv[])
 	std::cout << " Matrix " << std::endl;
 	print4x4Matrix (transformation);
 	
-	vizu (cloud_source, cloud_target, cloud_source_registered);
+	// Compute the Hausdorff distance
+	pcl::console::print_highlight ("Hausdorff\n");
+	compute (cloud_source, cloud_source_registered);
 	
+	vizu (cloud_source, cloud_target, cloud_source_registered);
 	
 	return 0;
 }

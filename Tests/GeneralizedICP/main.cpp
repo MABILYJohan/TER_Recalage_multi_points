@@ -15,7 +15,9 @@
 #include <pcl/registration/gicp.h>
 #include <pcl/registration/gicp6d.h>
 
+#include <pcl/visualization/pcl_visualizer.h>
 #include "utils_pcl.h"
+
 
 using namespace pcl;
 using namespace pcl::io;
@@ -44,7 +46,6 @@ int main (int argc, char *argv[])
 		printf ("%s file1.stl/pcd file2.stl/pcd\n\n", argv[0]);
 		exit (0);
 	}
-	
 	
 	console::print_highlight ("Loading point clouds...\n");
 	// Checking program arguments
@@ -162,7 +163,12 @@ int main (int argc, char *argv[])
 	
 	
 	// Visualization
-	vizu (cloud_source, cloud_target, output);
+	
+	char name[20] = "Generalized ICP";
+	pcl::visualization::PCLVisualizer viewer = vizu (cloud_source,
+													cloud_target,
+													output,
+													name);
 	
 	return 0;
 }

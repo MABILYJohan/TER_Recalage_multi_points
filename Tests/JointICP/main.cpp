@@ -8,12 +8,10 @@
 
 #include <pcl/io/ply_io.h>
 #include <pcl/point_types.h>
-//~ #include <pcl/io/vtk_lib_io.h>
 #include <pcl/registration/icp.h>
-//~ #include <pcl/visualization/pcl_visualizer.h>
-//#include <pcl/console/time.h>   // TicToc
+#include <pcl/visualization/pcl_visualizer.h>
+#include <pcl/console/time.h>   // TicToc
 #include <pcl/io/pcd_io.h>
-//~ #include <pcl/filters/voxel_grid.h>
 
 
 #include <pcl/registration/joint_icp.h>
@@ -147,11 +145,14 @@ int main (int argc, char *argv[])
 		// Register
 		reg.align (cloud_reg);
 		trans_final = reg.getFinalTransformation ();
-		//~ for (int y = 0; y < 4; y++)
-			//~ for (int x = 0; x < 4; x++)
-				//~ EXPECT_NEAR (trans_final (y, x), delta_transform (y, x), 1E-2);
+		for (int y = 0; y < 4; y++)
+			for (int x = 0; x < 4; x++)
+			{
+				trans_final (y, x);
+				delta_transform (y, x);
+			}
 		
-		//~ EXPECT_TRUE (cloud_reg.empty ()); // By definition, returns an empty cloud
+		if (cloud_reg.empty () == true) printf ("cloud_reg empty\n"); // By definition, returns an empty cloud
 		
 		// Clear
 		reg.clearInputSources ();
@@ -164,9 +165,12 @@ int main (int argc, char *argv[])
 	////////////////////////////////////////////////////////////////////
 	
 	
-	
 	// Visualization
-	vizu (cloud_source, cloud_target, cloud_reg);
+	char name[20] = "JOINT ICP";
+	pcl::visualization::PCLVisualizer viewer = vizu (cloud_source,
+													cloud_target,
+													cloud_reg,
+													name);
 	
 	return 0;
 }
