@@ -191,16 +191,16 @@ int main (int argc, char* argv[])
 	*  in red (right viewport).
 	**/
 	// Original point cloud is black
-	pcl::visualization::PointCloudColorHandlerCustom<PointT> cloud_in_color_h 
+	pcl::visualization::PointCloudColorHandlerCustom<PointT> cloud_tr_color_h 
 		(cloud_tr,
 		 bckgr_gray_level,
 		 bckgr_gray_level, 
 		 bckgr_gray_level);
-	viewer.addPointCloud (cloud_tr, cloud_in_color_h, "cloud_in_v1", v1);
-	viewer.addPointCloud (cloud_tr, cloud_in_color_h, "cloud_in_v2", v2);
+	viewer.addPointCloud (cloud_tr, cloud_tr_color_h, "cloud_in_v1", v1);
+	viewer.addPointCloud (cloud_tr, cloud_tr_color_h, "cloud_in_v2", v2);
 	// Transformed point cloud is green
-	pcl::visualization::PointCloudColorHandlerCustom<PointT> cloud_tr_color_h (cloud_in, 20, 180, 20);
-	viewer.addPointCloud (cloud_in, cloud_tr_color_h, "cloud_tr_v1", v1);
+	pcl::visualization::PointCloudColorHandlerCustom<PointT> cloud_in_color_h (cloud_in, 20, 180, 20);
+	viewer.addPointCloud (cloud_in, cloud_in_color_h, "cloud_tr_v1", v1);
 	// ICP aligned point cloud is red
 	pcl::visualization::PointCloudColorHandlerCustom<PointT> cloud_icp_color_h (cloud_icp, 180, 20, 20);
 	viewer.addPointCloud (cloud_icp, cloud_icp_color_h, "cloud_icp_v2", v2);
@@ -213,8 +213,8 @@ int main (int argc, char* argv[])
 	*  the integer iterations into a string.
 	**/
 	// Adding text descriptions in each viewport
-	viewer.addText ("Black: Original point cloud\nGreen: Matrix transformed point cloud", 10, 15, 16, bckgr_gray_level, bckgr_gray_level, bckgr_gray_level, "icp_info_1", v1);
-	viewer.addText ("Black: Original point cloud\nRed: ICP aligned point cloud", 10, 15, 16, bckgr_gray_level, bckgr_gray_level, bckgr_gray_level, "icp_info_2", v2);	
+	viewer.addText ("Black: target Cloud\nGreen: original cloud", 10, 15, 16, bckgr_gray_level, bckgr_gray_level, bckgr_gray_level, "icp_info_1", v1);
+	viewer.addText ("Black: target Cloud\nRed: ICP aligned point cloud", 10, 15, 16, bckgr_gray_level, bckgr_gray_level, bckgr_gray_level, "icp_info_2", v2);	
 	std::stringstream ss;
 	ss << iterations;
 	std::string iterations_cnt = "ICP iterations = " + ss.str ();
