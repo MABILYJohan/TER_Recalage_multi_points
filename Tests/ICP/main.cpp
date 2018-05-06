@@ -15,7 +15,6 @@
 
 #include "utils_pcl.h"
 
-bool next_iteration = false;
 
 /**
  * This function takes the reference of a 4x4 matrix and prints
@@ -31,13 +30,6 @@ void print4x4Matrix (const Eigen::Matrix4d & matrix)
   printf ("t = < %6.3f, %6.3f, %6.3f >\n\n", matrix (0, 3), matrix (1, 3), matrix (2, 3));
 }
 
-void keyboardEventOccurred (const pcl::visualization::KeyboardEvent& event,
-                       void* nothing)
-{
-  if (event.getKeySym () == "space" && event.keyDown ()) {
-	  next_iteration = true;
-  }
-}
 
 int main (int argc, char *argv[])
 {
