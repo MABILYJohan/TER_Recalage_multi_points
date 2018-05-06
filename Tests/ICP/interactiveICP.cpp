@@ -50,6 +50,23 @@ void keyboardEventOccurred (const pcl::visualization::KeyboardEvent& event,
 int main (int argc, char* argv[])
 {
 	
+	if (argv[1] != NULL && strcmp(argv[1], "-h")==0) {
+		std::cout << " \nUsage  " << std::endl;
+		printf ("%s file1.stl/pcd file2.stl/pcd [maxCorDist] [iterations] [epsilon] [difDistEpsilon]\n\n", argv[0]);
+		exit (0);
+	}
+	
+	pcl::console::print_highlight ("Loading point clouds...\n");
+	// Checking program arguments
+	if (argc-1 < 2)
+	{
+		printf ("Usage :\n");
+		printf ("\t\t%s file1.stl/pcd file2.stl/pcd [maxCorDist] [iterations] [epsilon] [difDistEpsilon]\n", argv[0]);
+		PCL_ERROR ("Provide two stl or pcd files.\n");
+		return (-1);
+	}
+	
+	
 	/**
 	* The 3 point clouds we will use to store the data.
 	**/
@@ -59,32 +76,14 @@ int main (int argc, char* argv[])
 	PointCloudT::Ptr cloud_icp (new PointCloudT);  // ICP output point cloud
 
 	
-	/**
-	* We check the arguments of the program, set the number
-	* of initial ICP iterations and try to load the PLY file.
-	**/
-	// Checking program arguments
-	if (argc < 2)
-	{
-		printf ("Usage :\n");
-		printf ("\t\t%s file.stl/pcd number_of_ICP_iterations\n", argv[0]);
-		PCL_ERROR ("Provide one stl or pcd file.\n");
-		return (-1);
-	}
-	int iterations = 1;  // Default number of ICP iterations
-	if (argc > 2)
-	{
-		// If the user passed the number of iteration as an argument
-		iterations = atoi (argv[2]);
-		if (iterations < 1)
-		{
-			PCL_ERROR ("Number of initial iterations must be >= 1\n");
-			return (-1);
-		}
-	}
+	//~ int iterations = 1;  // Default number of ICP iterations
 	
 	pcl::console::TicToc time;
 	time.tic ();
+	//
+	// Downsample for consistency and speed
+	// \note enable this for large datasets
+	pcl::console::print_highlight ("DownSampling...\n");
 	pcl::PointCloud<pcl::PointXYZ>::Ptr BIGcloud_source = loadCloud(argv[1]);
 	pcl::PointCloud<pcl::PointXYZ> cloud_source = downSample_cloud (BIGcloud_source);
 	copyPointCloud (cloud_source, *cloud_in);
@@ -103,36 +102,49 @@ int main (int argc, char* argv[])
 	**/
 	// Defining a rotation matrix and translation vector
 	Eigen::Matrix4d transformation_matrix = Eigen::Matrix4d::Identity ();
-	// A rotation matrix (see https://en.wikipedia.org/wiki/Rotation_matrix)
-	double theta = M_PI / 8;  // The angle of rotation in radians
-	transformation_matrix (0, 0) = cos (theta);
-	transformation_matrix (0, 1) = -sin (theta);
-	transformation_matrix (1, 0) = sin (theta);
-	transformation_matrix (1, 1) = cos (theta);
-	// A translation on Z axis (0.4 meters)
-	transformation_matrix (2, 3) = 0.4;
-	// Display in terminal the transformation matrix
-	std::cout << "Applying this rigid transformation to: cloud_in -> cloud_icp" << std::endl;
-	print4x4Matrix (transformation_matrix);
+	//~ // A rotation matrix (see https://en.wikipedia.org/wiki/Rotation_matrix)
+	//~ double theta = M_PI / 8;  // The angle of rotation in radians
+	//~ transformation_matrix (0, 0) = cos (theta);
+	//~ transformation_matrix (0, 1) = -sin (theta);
+	//~ transformation_matrix (1, 0) = sin (theta);
+	//~ transformation_matrix (1, 1) = cos (theta);
+	//~ // A translation on Z axis (0.4 meters)
+	//~ transformation_matrix (2, 3) = 0.4;
+	//~ // Display in terminal the transformation matrix
+	//~ std::cout << "Applying this rigid transformation to: cloud_in -> cloud_icp" << std::endl;
+	//~ print4x4Matrix (transformation_matrix);
 	// Executing the transformation
 	//~ pcl::transformPointCloud (*cloud_in, *cloud_icp, transformation_matrix);
 	//~ *cloud_tr = *cloud_icp;  // We backup cloud_icp into cloud_tr for later use
 	
 	
-	/**
-	* This is the creation of the ICP object.
-	* We set the parameters of the ICP algorithm. 
-	* setMaximumIterations(iterations) sets the number 
-	*  of initial iterations to do (1 is the default value).
-	* We then transform the point cloud into cloud_icp.
-	* After the first alignment we set ICP max iterations to 1 
-	*  for all the next times this ICP object will be used 
-	*  (when the user presses “space”)
-	**/
+	pcl::console::print_highlight ("DownSampling...\n");
 	// The Iterative Closest Point algorithm
 	time.tic ();
 	pcl::IterativeClosestPoint<PointT, PointT> icp;
+	
+	
+	// Set the max correspondence distance to 1m (e.g., correspondences with higher distances will be ignored)
+	double maxCorDist = 1;
+	if (argv[3]!=NULL && atof(argv[3])>0)	maxCorDist = atof(argv[3]);
+	icp.setMaxCorrespondenceDistance (maxCorDist);
+	
+	// Set the maximum number of iterations (criterion 1)
+	int iterations = 1;
+	if (argv[4]!=NULL && atoi(argv[4])>0)	iterations = atoi(argv[4]);
 	icp.setMaximumIterations (iterations);
+	
+	// Set the transformation epsilon (criterion 2)
+	double epsilon = 1e-8;
+	if (argv[5]!=NULL && atof(argv[5])>0)	epsilon = atof(argv[5]);
+	icp.setTransformationEpsilon (epsilon);
+	
+	// Set the euclidean distance difference epsilon (criterion 3)
+	double difDistEpsilon = 1;
+	if (argv[6]!=NULL && atoi(argv[6])>0)	difDistEpsilon = atoi(argv[6]);
+	icp.setEuclideanFitnessEpsilon (difDistEpsilon);
+	
+	
 	//~ *cloud_icp = *cloud_in;
 	copyPointCloud (*cloud_in, *cloud_icp);
 	icp.setInputSource (cloud_icp);
@@ -142,18 +154,15 @@ int main (int argc, char* argv[])
 	std::cout << "Applied " << iterations << " ICP iteration(s) in " << time.toc () << " ms" << std::endl;
 	
 	
-	/**
-	* Check if the ICP algorithm converged; otherwise exit the program. 
-	* In case of success we store the transformation matrix 
-	*  in a 4x4 matrix and then print the rigid matrix transformation. 
-	* The reason why we store this matrix is explained later.
-	**/
 	if (icp.hasConverged ())
 	{
 		std::cout << "\nICP has converged, score is " << icp.getFitnessScore () << std::endl;
 		std::cout << "\nICP transformation " << iterations << " : cloud_icp -> cloud_in" << std::endl;
 		transformation_matrix = icp.getFinalTransformation ().cast<double>();
 		print4x4Matrix (transformation_matrix);
+		// Compute the Hausdorff distance
+		pcl::console::print_highlight ("Hausdorff\n");
+		compute (*cloud_tr, *cloud_icp);
 	}
 	else
 	{
@@ -161,6 +170,7 @@ int main (int argc, char* argv[])
 		return (-1);
 	}
 	
+	//~ vizu (*cloud_in, *cloud_tr, *cloud_icp, iterations);
 	
 	/**
 	* For the visualization we create two viewports in the visualizer
@@ -196,11 +206,11 @@ int main (int argc, char* argv[])
 		 bckgr_gray_level,
 		 bckgr_gray_level, 
 		 bckgr_gray_level);
-	viewer.addPointCloud (cloud_tr, cloud_tr_color_h, "cloud_in_v1", v1);
-	viewer.addPointCloud (cloud_tr, cloud_tr_color_h, "cloud_in_v2", v2);
+	viewer.addPointCloud (cloud_tr, cloud_tr_color_h, "cloud_tr_v1", v1);
+	viewer.addPointCloud (cloud_tr, cloud_tr_color_h, "cloud_tr_v2", v2);
 	// Transformed point cloud is green
 	pcl::visualization::PointCloudColorHandlerCustom<PointT> cloud_in_color_h (cloud_in, 20, 180, 20);
-	viewer.addPointCloud (cloud_in, cloud_in_color_h, "cloud_tr_v1", v1);
+	viewer.addPointCloud (cloud_in, cloud_in_color_h, "cloud_in_v1", v1);
 	// ICP aligned point cloud is red
 	pcl::visualization::PointCloudColorHandlerCustom<PointT> cloud_icp_color_h (cloud_icp, 180, 20, 20);
 	viewer.addPointCloud (cloud_icp, cloud_icp_color_h, "cloud_icp_v2", v2);
@@ -299,10 +309,14 @@ int main (int argc, char* argv[])
 				transformation_matrix *= icp.getFinalTransformation ().cast<double>();  // WARNING /!\ This is not accurate! For "educational" purpose only!
 				print4x4Matrix (transformation_matrix);  // Print the transformation between original pose and current pose
 				
+				// Compute the Hausdorff distance
+				pcl::console::print_highlight ("Hausdorff\n");
+				compute (*cloud_tr, *cloud_icp);
+				
 				ss.str ("");
 				ss << iterations;
 				std::string iterations_cnt = "ICP iterations = " + ss.str ();
-				viewer.updateText (iterations_cnt, 10, 60, 16, txt_gray_lvl, txt_gray_lvl, txt_gray_lvl, "iterations_cnt");
+				viewer.updateText (iterations_cnt, 10, 60, 16, bckgr_gray_level, bckgr_gray_level, bckgr_gray_level, "iterations_cnt");
 				viewer.updatePointCloud (cloud_icp, cloud_icp_color_h, "cloud_icp_v2");
 			}
 			else

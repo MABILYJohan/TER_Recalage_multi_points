@@ -15,12 +15,13 @@
 
 #include "utils_pcl.h"
 
+bool next_iteration = false;
 
 /**
  * This function takes the reference of a 4x4 matrix and prints
  * the rigid transformation in an human readable way.
  **/
-void print4x4Matrix (const Eigen::Matrix4f & matrix)
+void print4x4Matrix (const Eigen::Matrix4d & matrix)
 {
   printf ("Rotation matrix :\n");
   printf ("    | %6.3f %6.3f %6.3f | \n", matrix (0, 0), matrix (0, 1), matrix (0, 2));
@@ -30,9 +31,17 @@ void print4x4Matrix (const Eigen::Matrix4f & matrix)
   printf ("t = < %6.3f, %6.3f, %6.3f >\n\n", matrix (0, 3), matrix (1, 3), matrix (2, 3));
 }
 
+void keyboardEventOccurred (const pcl::visualization::KeyboardEvent& event,
+                       void* nothing)
+{
+  if (event.getKeySym () == "space" && event.keyDown ()) {
+	  next_iteration = true;
+  }
+}
 
 int main (int argc, char *argv[])
 {
+	
 	if (argv[1] != NULL && strcmp(argv[1], "-h")==0) {
 		std::cout << " \nUsage  " << std::endl;
 		printf ("%s file1.stl/pcd file2.stl/pcd [maxCorDist] [iterations] [epsilon] [difDistEpsilon]\n\n", argv[0]);
@@ -51,9 +60,7 @@ int main (int argc, char *argv[])
 	std::cout << " loading cloud src " << std::endl;
 	pcl::PointCloud<pcl::PointXYZ>::Ptr BIGcloud_source = loadCloud(argv[1]);
 	std::cout << " loading cloud target " << std::endl;
-	pcl::PointCloud<pcl::PointXYZ>::Ptr BIGcloud_target = loadCloud(argv[2]);
-	
-	pcl::PointCloud<pcl::PointXYZ> cloud_source_registered; 
+	pcl::PointCloud<pcl::PointXYZ>::Ptr BIGcloud_target = loadCloud(argv[2]); 
 	
 	//
 	// Downsample for consistency and speed
@@ -62,7 +69,8 @@ int main (int argc, char *argv[])
 	pcl::PointCloud<pcl::PointXYZ> cloud_source = downSample_cloud (BIGcloud_source);
 	pcl::PointCloud<pcl::PointXYZ> cloud_target = downSample_cloud (BIGcloud_target);
 	
-	
+	pcl::console::TicToc time;
+	time.tic ();
 	
 	pcl::console::print_highlight ("iterative closest point...\n");
 	pcl::IterativeClosestPoint<pcl::PointXYZ, pcl::PointXYZ> icp;
@@ -72,12 +80,11 @@ int main (int argc, char *argv[])
 	PointCloud<PointXYZ>::Ptr tgt (new PointCloud<PointXYZ>);
 	copyPointCloud (cloud_target, *tgt);
 	
-	// Set the input source and target
-	icp.setInputSource (src);
-	icp.setInputTarget (tgt);
+	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_source_registered (new PointCloud<PointXYZ>);;
+	copyPointCloud (*src, *cloud_source_registered);
 	
-	// Set the max correspondence distance to 5cm (e.g., correspondences with higher distances will be ignored)
-	double maxCorDist = 0.05;
+	// Set the max correspondence distance to 1m (e.g., correspondences with higher distances will be ignored)
+	double maxCorDist = 1;
 	if (argv[3]!=NULL && atof(argv[3])>0)	maxCorDist = atof(argv[3]);
 	icp.setMaxCorrespondenceDistance (maxCorDist);
 	
@@ -96,8 +103,12 @@ int main (int argc, char *argv[])
 	if (argv[6]!=NULL && atoi(argv[6])>0)	difDistEpsilon = atoi(argv[6]);
 	icp.setEuclideanFitnessEpsilon (difDistEpsilon);
 	
+	// Set the input source and target
+	icp.setInputSource (cloud_source_registered);
+	icp.setInputTarget (tgt);
+	
 	// Perform the alignment
-	icp.align (cloud_source_registered);
+	icp.align (*cloud_source_registered);
 	if (!icp.hasConverged ()) {
 		PCL_ERROR ("\nICP has not converged.\n");
 		return (-1);
@@ -105,18 +116,20 @@ int main (int argc, char *argv[])
 	
 	std::cout << " \nICP has converged, score is  " << icp.getFitnessScore () << std::endl;
 	// Obtain the transformation that aligned cloud_source to cloud_source_registered
-	Eigen::Matrix4f transformation = icp.getFinalTransformation ();
+	Eigen::Matrix4d transformation_matrix = Eigen::Matrix4d::Identity ();
+	transformation_matrix = icp.getFinalTransformation ().cast<double>();
 	
 	std::cout << " Matrix " << std::endl;
-	print4x4Matrix (transformation);
+	print4x4Matrix (transformation_matrix);
 	
 	// Compute the Hausdorff distance
 	pcl::console::print_highlight ("Hausdorff\n");
-	compute (cloud_source, cloud_source_registered);
+	compute (*tgt, *cloud_source_registered);
 	
-	vizu (cloud_source, cloud_target, cloud_source_registered);
+	pcl::console::print_highlight ("Visualisation \n");
+	vizu (cloud_source, cloud_target, *cloud_source_registered, iterations);
 	
-	return 0;
+	return (0);
 }
 
 
