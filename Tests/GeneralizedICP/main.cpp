@@ -66,9 +66,6 @@ int main (int argc, char *argv[])
 	// \note enable this for large datasets
 	console::print_highlight ("DownSampling...\n");
 	
-	//~ PointCloud<PointXYZ>::Ptr cloud_source = downSample_cloud (BIGcloud_source);
-	//~ PointCloud<PointXYZ>::Ptr cloud_target = downSample_cloud (BIGcloud_target);
-	
 	PointCloud<PointXYZ> cloud_source = downSample_cloud (BIGcloud_source);
 	PointCloud<PointXYZ> cloud_target = downSample_cloud (BIGcloud_target);
 	
@@ -83,26 +80,37 @@ int main (int argc, char *argv[])
 	copyPointCloud (cloud_source, *src);
 	PointCloud<PointT>::Ptr tgt (new PointCloud<PointT>);
 	copyPointCloud (cloud_target, *tgt);
-	PointCloud<PointT> output;
+	PointCloud<PointT>::Ptr output (new PointCloud<PointT>);
+	copyPointCloud (*src, *output);
 	
 	GeneralizedIterativeClosestPoint<PointT, PointT> reg;
-	reg.setInputSource (src);
+	reg.setInputSource (output);
 	reg.setInputTarget (tgt);
+	
+	// Set the max correspondence distance to 1m (e.g., correspondences with higher distances will be ignored)
+	double maxCorDist = 1;
+	if (argv[3]!=NULL && atof(argv[3])>0)	maxCorDist = atof(argv[3]);
+	reg.setMaxCorrespondenceDistance (maxCorDist);
 	
 	// Set the maximum number of iterations (criterion 1)
 	int iterations = 1;
-	if (argv[3]!=NULL && atoi(argv[3])>0)	iterations = atoi(argv[3]);
+	if (argv[4]!=NULL && atoi(argv[4])>0)	iterations = atoi(argv[4]);
 	reg.setMaximumIterations (iterations);
 	
 	// Set the transformation epsilon (criterion 2)
 	double epsilon = 1e-8;
-	if (argv[4]!=NULL && atof(argv[4])>0)	epsilon = atof(argv[4]);
+	if (argv[5]!=NULL && atof(argv[5])>0)	epsilon = atof(argv[5]);
 	reg.setTransformationEpsilon (epsilon);
+	
+	// Set the euclidean distance difference epsilon (criterion 3)
+	double difDistEpsilon = 1;
+	if (argv[6]!=NULL && atoi(argv[6])>0)	difDistEpsilon = atoi(argv[6]);
+	reg.setEuclideanFitnessEpsilon (difDistEpsilon);
 	
 	
 	// Register
 	std::cout << " Align " << std::endl;
-	reg.align (output);
+	reg.align (*output);
 	if (!reg.hasConverged ()) {
 		PCL_ERROR ("\nreg has not converged.\n");
 		return (-1);
@@ -126,11 +134,11 @@ int main (int argc, char *argv[])
 			
 			pcl::search::KdTree<PointT>::Ptr tree_recip (new pcl::search::KdTree<PointT>);
 			if (force_cache_reciprocal)
-				tree_recip->setInputCloud (src);
+				tree_recip->setInputCloud (output);
 			reg.setSearchMethodSource (tree_recip, force_cache_reciprocal);
 			
 			// Register
-			reg.align (output);
+			reg.align (*output);
 			if (!reg.hasConverged ()) {
 				std::cout << " \treg has not converged " << std::endl;
 			}
@@ -148,11 +156,14 @@ int main (int argc, char *argv[])
 	pcl::transformPointCloud (*tgt, *transformed_tgt, transform.matrix ()); // transformed_tgt is now a copy of tgt with a transformation matrix applied
 	
 	GeneralizedIterativeClosestPoint<PointT, PointT> reg_guess;
-	reg_guess.setInputSource (src);
+	//~ reg_guess.setInputSource (src);
+	reg_guess.setInputSource (output);
 	reg_guess.setInputTarget (transformed_tgt);
+	reg_guess.setMaxCorrespondenceDistance (maxCorDist);
 	reg_guess.setMaximumIterations (iterations);
 	reg_guess.setTransformationEpsilon (epsilon);
-	reg_guess.align (output, transform.matrix ());
+	reg_guess.setEuclideanFitnessEpsilon (difDistEpsilon);
+	reg_guess.align (*output, transform.matrix ());
 	
 	if (!reg_guess.hasConverged ()) {
 		PCL_ERROR ("\treg_guess has not converged.\n");
@@ -162,12 +173,17 @@ int main (int argc, char *argv[])
 	std::cout << std::endl;
 	
 	
+	// Compute the Hausdorff distance
+	pcl::console::print_highlight ("Hausdorff\n");
+	compute (cloud_target, *output);
+	
 	// Visualization
 	
 	char name[20] = "Generalized ICP";
 	pcl::visualization::PCLVisualizer viewer = vizu (cloud_source,
 													cloud_target,
-													output,
+													*output,
+													iterations,
 													name);
 	
 	return 0;
