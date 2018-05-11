@@ -1,5 +1,5 @@
 /************
- * TEST ICP *
+ * TEST Meta Registration *
  ************/
 
 
@@ -8,7 +8,9 @@
 
 #include <pcl/io/ply_io.h>
 #include <pcl/point_types.h>
+#include <pcl/point_cloud.h>
 #include <pcl/registration/icp.h>
+#include <pcl/registration/incremental_registration.h>
 #include <pcl/console/time.h>   // TicToc
 
 #include <pcl/io/pcd_io.h>
@@ -49,63 +51,44 @@ int main (int argc, char *argv[])
 		PCL_ERROR ("Provide two stl or pcd files.\n");
 		return (-1);
 	}
-	std::cout << " loading cloud src " << std::endl;
-	pcl::PointCloud<pcl::PointXYZ>::Ptr BIGcloud_source = loadCloud(argv[1]);
-	std::cout << " loading cloud target " << std::endl;
-	pcl::PointCloud<pcl::PointXYZ>::Ptr BIGcloud_target = loadCloud(argv[2]); 
-	
-	//
-	// Downsample for consistency and speed
-	// \note enable this for large datasets
-	pcl::console::print_highlight ("DownSampling...\n");
-	pcl::PointCloud<pcl::PointXYZ> cloud_source = downSample_cloud (BIGcloud_source);
-	pcl::PointCloud<pcl::PointXYZ> cloud_target = downSample_cloud (BIGcloud_target);
 	
 	pcl::console::TicToc time;
 	time.tic ();
 	
 	pcl::console::print_highlight ("iterative closest point...\n");
-	pcl::IterativeClosestPoint<pcl::PointXYZ, pcl::PointXYZ> icp;
-	
-	PointCloud<PointXYZ>::Ptr src (new PointCloud<PointXYZ>);
-	copyPointCloud (cloud_source, *src);
-	PointCloud<PointXYZ>::Ptr tgt (new PointCloud<PointXYZ>);
-	copyPointCloud (cloud_target, *tgt);
-	
-	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_source_registered (new PointCloud<PointXYZ>);;
-	copyPointCloud (*src, *cloud_source_registered);
+	IterativeClosestPoint<PointXYZ,PointXYZ>::Ptr icp (new IterativeClosestPoint<PointXYZ,PointXYZ>);
 	
 	// Set the max correspondence distance to 1m (e.g., correspondences with higher distances will be ignored)
-	double maxCorDist = 1;
-	if (argv[3]!=NULL && atof(argv[3])>0)	maxCorDist = atof(argv[3]);
-	icp.setMaxCorrespondenceDistance (maxCorDist);
+	icp->setMaxCorrespondenceDistance (10);
 	
 	// Set the maximum number of iterations (criterion 1)
-	int iterations = 1;
-	if (argv[4]!=NULL && atoi(argv[4])>0)	iterations = atoi(argv[4]);
-	icp.setMaximumIterations (iterations);
+	icp->setMaximumIterations (15);
 	
-	// Set the transformation epsilon (criterion 2)
-	double epsilon = 1e-8;
-	if (argv[5]!=NULL && atof(argv[5])>0)	epsilon = atof(argv[5]);
-	icp.setTransformationEpsilon (epsilon);
+	pcl::registration::IncrementalRegistration<PointXYZ> iicp;
+	iicp.setRegistration(icp);
 	
-	// Set the euclidean distance difference epsilon (criterion 3)
-	double difDistEpsilon = 1;
-	if (argv[6]!=NULL && atoi(argv[6])>0)	difDistEpsilon = atoi(argv[6]);
-	icp.setEuclideanFitnessEpsilon (difDistEpsilon);
-	
-	// Set the input source and target
-	icp.setInputSource (cloud_source_registered);
-	icp.setInputTarget (tgt);
-	
+	int i=1;
+	std::stringstream ss;
 	// Perform the alignment
-	icp.align (*cloud_source_registered);
-	if (!icp.hasConverged ()) {
-		PCL_ERROR ("\nICP has not converged.\n");
-		return (-1);
+	while (i<4)
+	{
+		pcl::PointCloud<pcl::PointXYZ>::Ptr BIGcloud = loadCloud(argv[i]);
+		pcl::PointCloud<pcl::PointXYZ> DOWNcloud = downSample_cloud (BIGcloud);
+		PointCloud<PointXYZ>::Ptr cloud (new PointCloud<PointXYZ>);
+		copyPointCloud (DOWNcloud, *cloud);
+		
+		
+		iicp.registerCloud (cloud);
+		PointCloud<PointXYZ>::Ptr tmp (new PointCloud<PointXYZ>);
+		transformPointCloud (*cloud, *tmp, iicp.getAbsoluteTransform ());
+		
+		ss << i << ".pcd";
+		pcl::io::savePCDFile (ss.str (), *tmp, true);
+		ss.str("");
+		
+		i++;
 	}
-	
+	/*
 	std::cout << " \nICP has converged, score is  " << icp.getFitnessScore () << std::endl;
 	// Obtain the transformation that aligned cloud_source to cloud_source_registered
 	Eigen::Matrix4d transformation_matrix = Eigen::Matrix4d::Identity ();
@@ -119,7 +102,7 @@ int main (int argc, char *argv[])
 	compute (*tgt, *cloud_source_registered);
 	
 	pcl::console::print_highlight ("Visualisation \n");
-	vizu (cloud_source, cloud_target, *cloud_source_registered, iterations);
+	vizu (cloud_source, cloud_target, *cloud_source_registered);*/
 	
 	return (0);
 }

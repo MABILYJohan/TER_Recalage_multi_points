@@ -1,5 +1,5 @@
 /************
- * TEST ICP *
+ * TEST FPCS *
  ************/
 
 
@@ -8,8 +8,11 @@
 
 #include <pcl/io/ply_io.h>
 #include <pcl/point_types.h>
-#include <pcl/registration/icp.h>
+#include <pcl/registration/ia_fpcs.h>
 #include <pcl/console/time.h>   // TicToc
+#include <pcl/features/normal_3d.h>
+#include <pcl/features/fpfh.h>
+#include <pcl/registration/ia_ransac.h>
 
 #include <pcl/io/pcd_io.h>
 
@@ -64,52 +67,77 @@ int main (int argc, char *argv[])
 	pcl::console::TicToc time;
 	time.tic ();
 	
-	pcl::console::print_highlight ("iterative closest point...\n");
-	pcl::IterativeClosestPoint<pcl::PointXYZ, pcl::PointXYZ> icp;
+	 // transform the source cloud by a large amount
+	Eigen::Vector3f initial_offset (100, 0, 0);
+	float angle = static_cast<float> (M_PI) / 2.0f;
+	Eigen::Quaternionf initial_rotation (cos (angle / 2), 0, 0, sin (angle / 2));
+	PointCloud<PointXYZ> cloud_source_transformed;
+	transformPointCloud (cloud_source, cloud_source_transformed, initial_offset, initial_rotation);
+	
+	// Initialize estimators for surface normals and FPFH features
+	search::KdTree<PointXYZ>::Ptr tree (new search::KdTree<PointXYZ>);
+
+	pcl::NormalEstimation<pcl::PointXYZ, Normal> norm_est;
+	norm_est.setSearchMethod (tree);
+	norm_est.setRadiusSearch (0.05);
+	PointCloud<Normal> normals;
+
+	pcl::FPFHEstimation<pcl::PointXYZ, Normal, FPFHSignature33> fpfh_est;
+	fpfh_est.setSearchMethod (tree);
+	fpfh_est.setRadiusSearch (0.05);
+	PointCloud<FPFHSignature33> features_source, features_target;
+	
+	pcl::console::print_highlight ("Sample Consensus...\n");
+	pcl::SampleConsensusInitialAlignment<pcl::PointXYZ, pcl::PointXYZ, FPFHSignature33> reg;
 	
 	PointCloud<PointXYZ>::Ptr src (new PointCloud<PointXYZ>);
-	copyPointCloud (cloud_source, *src);
+	copyPointCloud (cloud_source_transformed, *src);
 	PointCloud<PointXYZ>::Ptr tgt (new PointCloud<PointXYZ>);
 	copyPointCloud (cloud_target, *tgt);
 	
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_source_registered (new PointCloud<PointXYZ>);;
 	copyPointCloud (*src, *cloud_source_registered);
 	
+	// Estimate the FPFH features for the source cloud
+	norm_est.setInputCloud (src);
+	norm_est.compute (normals);
+	fpfh_est.setInputCloud (src);
+	fpfh_est.setInputNormals (normals.makeShared ());
+	fpfh_est.compute (features_source);
+
+	// Estimate the FPFH features for the target cloud
+	norm_est.setInputCloud (tgt);
+	norm_est.compute (normals);
+	fpfh_est.setInputCloud (tgt);
+	fpfh_est.setInputNormals (normals.makeShared ());
+	fpfh_est.compute (features_target);
+	
 	// Set the max correspondence distance to 1m (e.g., correspondences with higher distances will be ignored)
-	double maxCorDist = 1;
-	if (argv[3]!=NULL && atof(argv[3])>0)	maxCorDist = atof(argv[3]);
-	icp.setMaxCorrespondenceDistance (maxCorDist);
-	
+	double MinSampleDistance = 0.05f;
+	if (argv[3]!=NULL && atof(argv[3])>0)	MinSampleDistance = atof(argv[3]);
+	reg.setMinSampleDistance (MinSampleDistance);
 	// Set the maximum number of iterations (criterion 1)
-	int iterations = 1;
-	if (argv[4]!=NULL && atoi(argv[4])>0)	iterations = atoi(argv[4]);
-	icp.setMaximumIterations (iterations);
-	
-	// Set the transformation epsilon (criterion 2)
-	double epsilon = 1e-8;
-	if (argv[5]!=NULL && atof(argv[5])>0)	epsilon = atof(argv[5]);
-	icp.setTransformationEpsilon (epsilon);
-	
-	// Set the euclidean distance difference epsilon (criterion 3)
-	double difDistEpsilon = 1;
-	if (argv[6]!=NULL && atoi(argv[6])>0)	difDistEpsilon = atoi(argv[6]);
-	icp.setEuclideanFitnessEpsilon (difDistEpsilon);
+	double MaxCorrespondenceDistance = 0.1f;
+	if (argv[4]!=NULL && atof(argv[4])>0)	MaxCorrespondenceDistance = atof(argv[4]);
+	reg.setMaxCorrespondenceDistance (MaxCorrespondenceDistance);
+	// Set the maximum number of iterations (criterion 1)
+	int MaximumIterations = 1000;
+	if (argv[6]!=NULL && atoi(argv[6])>0)	MaximumIterations = atoi(argv[6]);
+	reg.setMaximumIterations (MaximumIterations);
 	
 	// Set the input source and target
-	icp.setInputSource (cloud_source_registered);
-	icp.setInputTarget (tgt);
+	reg.setInputSource (cloud_source_registered);
+	reg.setInputTarget (tgt);
+	reg.setSourceFeatures (features_source.makeShared ());
+	reg.setTargetFeatures (features_target.makeShared ());
 	
 	// Perform the alignment
-	icp.align (*cloud_source_registered);
-	if (!icp.hasConverged ()) {
-		PCL_ERROR ("\nICP has not converged.\n");
-		return (-1);
-	}
+	reg.align (*cloud_source_registered);
 	
-	std::cout << " \nICP has converged, score is  " << icp.getFitnessScore () << std::endl;
+	std::cout << " \nICP has converged, score is  " << reg.getFitnessScore () << std::endl;
 	// Obtain the transformation that aligned cloud_source to cloud_source_registered
 	Eigen::Matrix4d transformation_matrix = Eigen::Matrix4d::Identity ();
-	transformation_matrix = icp.getFinalTransformation ().cast<double>();
+	transformation_matrix = reg.getFinalTransformation ().cast<double>();
 	
 	std::cout << " Matrix " << std::endl;
 	print4x4Matrix (transformation_matrix);
@@ -119,7 +147,7 @@ int main (int argc, char *argv[])
 	compute (*tgt, *cloud_source_registered);
 	
 	pcl::console::print_highlight ("Visualisation \n");
-	vizu (cloud_source, cloud_target, *cloud_source_registered, iterations);
+	vizu (cloud_source, cloud_target, *cloud_source_registered);
 	
 	return (0);
 }

@@ -1,5 +1,5 @@
 /************
- * TEST ICP *
+ * TEST FPCS *
  ************/
 
 
@@ -8,7 +8,7 @@
 
 #include <pcl/io/ply_io.h>
 #include <pcl/point_types.h>
-#include <pcl/registration/icp.h>
+#include <pcl/registration/ia_kfpcs.h>
 #include <pcl/console/time.h>   // TicToc
 
 #include <pcl/io/pcd_io.h>
@@ -63,9 +63,9 @@ int main (int argc, char *argv[])
 	
 	pcl::console::TicToc time;
 	time.tic ();
-	
+		
 	pcl::console::print_highlight ("iterative closest point...\n");
-	pcl::IterativeClosestPoint<pcl::PointXYZ, pcl::PointXYZ> icp;
+	pcl::registration::KFPCSInitialAlignment<pcl::PointXYZ, pcl::PointXYZ> kfpcs_ia;
 	
 	PointCloud<PointXYZ>::Ptr src (new PointCloud<PointXYZ>);
 	copyPointCloud (cloud_source, *src);
@@ -76,40 +76,36 @@ int main (int argc, char *argv[])
 	copyPointCloud (*src, *cloud_source_registered);
 	
 	// Set the max correspondence distance to 1m (e.g., correspondences with higher distances will be ignored)
-	double maxCorDist = 1;
-	if (argv[3]!=NULL && atof(argv[3])>0)	maxCorDist = atof(argv[3]);
-	icp.setMaxCorrespondenceDistance (maxCorDist);
-	
+	int nr_threads = 8;
+	if (argv[3]!=NULL && atoi(argv[3])>0)	nr_threads = atoi(argv[3]);
+	kfpcs_ia.setNumberOfThreads (nr_threads);
 	// Set the maximum number of iterations (criterion 1)
-	int iterations = 1;
-	if (argv[4]!=NULL && atoi(argv[4])>0)	iterations = atoi(argv[4]);
-	icp.setMaximumIterations (iterations);
-	
+	double approx_overlap = 0.9f;
+	if (argv[4]!=NULL && atof(argv[4])>0)	approx_overlap = atof(argv[4]);
+	kfpcs_ia.setApproxOverlap (approx_overlap);
 	// Set the transformation epsilon (criterion 2)
-	double epsilon = 1e-8;
-	if (argv[5]!=NULL && atof(argv[5])>0)	epsilon = atof(argv[5]);
-	icp.setTransformationEpsilon (epsilon);
-	
+	double delta = 0.1f;
+	if (argv[5]!=NULL && atof(argv[5])>0)	delta = atof(argv[5]);
+	kfpcs_ia.setDelta (delta, false);
 	// Set the euclidean distance difference epsilon (criterion 3)
-	double difDistEpsilon = 1;
-	if (argv[6]!=NULL && atoi(argv[6])>0)	difDistEpsilon = atoi(argv[6]);
-	icp.setEuclideanFitnessEpsilon (difDistEpsilon);
+	double abort_score = 0.0f;
+	if (argv[6]!=NULL && atof(argv[6])>0)	abort_score = atof(argv[6]);
+	kfpcs_ia.setScoreThreshold (abort_score);
 	
 	// Set the input source and target
-	icp.setInputSource (cloud_source_registered);
-	icp.setInputTarget (tgt);
+	kfpcs_ia.setInputSource (cloud_source_registered);
+	kfpcs_ia.setInputTarget (tgt);
 	
-	// Perform the alignment
-	icp.align (*cloud_source_registered);
-	if (!icp.hasConverged ()) {
-		PCL_ERROR ("\nICP has not converged.\n");
-		return (-1);
+	for (int i = 0; i < 1; i++)
+	{
+		// Perform the alignment
+		kfpcs_ia.align (*cloud_source_registered);
+
 	}
-	
-	std::cout << " \nICP has converged, score is  " << icp.getFitnessScore () << std::endl;
+	std::cout << " \nICP has converged, score is  " << kfpcs_ia.getFitnessScore () << std::endl;
 	// Obtain the transformation that aligned cloud_source to cloud_source_registered
 	Eigen::Matrix4d transformation_matrix = Eigen::Matrix4d::Identity ();
-	transformation_matrix = icp.getFinalTransformation ().cast<double>();
+	transformation_matrix = kfpcs_ia.getFinalTransformation ().cast<double>();
 	
 	std::cout << " Matrix " << std::endl;
 	print4x4Matrix (transformation_matrix);
@@ -119,7 +115,7 @@ int main (int argc, char *argv[])
 	compute (*tgt, *cloud_source_registered);
 	
 	pcl::console::print_highlight ("Visualisation \n");
-	vizu (cloud_source, cloud_target, *cloud_source_registered, iterations);
+	vizu (cloud_source, cloud_target, *cloud_source_registered);
 	
 	return (0);
 }

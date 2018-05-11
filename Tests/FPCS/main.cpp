@@ -1,5 +1,5 @@
 /************
- * TEST ICP *
+ * TEST FPCS *
  ************/
 
 
@@ -8,7 +8,7 @@
 
 #include <pcl/io/ply_io.h>
 #include <pcl/point_types.h>
-#include <pcl/registration/icp.h>
+#include <pcl/registration/ia_fpcs.h>
 #include <pcl/console/time.h>   // TicToc
 
 #include <pcl/io/pcd_io.h>
@@ -64,11 +64,18 @@ int main (int argc, char *argv[])
 	pcl::console::TicToc time;
 	time.tic ();
 	
+	 // transform the source cloud by a large amount
+  Eigen::Vector3f initial_offset (1.f, 0.f, 0.f);
+  float angle = static_cast<float> (M_PI) / 2.f;
+  Eigen::Quaternionf initial_rotation (cos (angle / 2.f), 0, 0, sin (angle / 2.f));
+  PointCloud<PointXYZ> cloud_source_transformed;
+  transformPointCloud (cloud_source, cloud_source_transformed, initial_offset, initial_rotation);
+	
 	pcl::console::print_highlight ("iterative closest point...\n");
-	pcl::IterativeClosestPoint<pcl::PointXYZ, pcl::PointXYZ> icp;
+	pcl::registration::FPCSInitialAlignment<pcl::PointXYZ, pcl::PointXYZ> fpcs_ia;
 	
 	PointCloud<PointXYZ>::Ptr src (new PointCloud<PointXYZ>);
-	copyPointCloud (cloud_source, *src);
+	copyPointCloud (cloud_source_transformed, *src);
 	PointCloud<PointXYZ>::Ptr tgt (new PointCloud<PointXYZ>);
 	copyPointCloud (cloud_target, *tgt);
 	
@@ -76,40 +83,37 @@ int main (int argc, char *argv[])
 	copyPointCloud (*src, *cloud_source_registered);
 	
 	// Set the max correspondence distance to 1m (e.g., correspondences with higher distances will be ignored)
-	double maxCorDist = 1;
-	if (argv[3]!=NULL && atof(argv[3])>0)	maxCorDist = atof(argv[3]);
-	icp.setMaxCorrespondenceDistance (maxCorDist);
-	
+	int nr_threads = 1;
+	if (argv[3]!=NULL && atoi(argv[3])>0)	nr_threads = atoi(argv[3]);
+	fpcs_ia.setNumberOfThreads (nr_threads);
 	// Set the maximum number of iterations (criterion 1)
-	int iterations = 1;
-	if (argv[4]!=NULL && atoi(argv[4])>0)	iterations = atoi(argv[4]);
-	icp.setMaximumIterations (iterations);
-	
+	double approx_overlap = 0.9f;
+	if (argv[4]!=NULL && atof(argv[4])>0)	approx_overlap = atof(argv[4]);
+	fpcs_ia.setApproxOverlap (approx_overlap);
 	// Set the transformation epsilon (criterion 2)
-	double epsilon = 1e-8;
-	if (argv[5]!=NULL && atof(argv[5])>0)	epsilon = atof(argv[5]);
-	icp.setTransformationEpsilon (epsilon);
-	
+	double delta = 1.f;
+	if (argv[5]!=NULL && atof(argv[5])>0)	delta = atof(argv[5]);
+	fpcs_ia.setDelta (delta, true);
 	// Set the euclidean distance difference epsilon (criterion 3)
-	double difDistEpsilon = 1;
-	if (argv[6]!=NULL && atoi(argv[6])>0)	difDistEpsilon = atoi(argv[6]);
-	icp.setEuclideanFitnessEpsilon (difDistEpsilon);
+	int nr_samples = 100;
+	if (argv[6]!=NULL && atoi(argv[6])>0)	nr_samples = atoi(argv[6]);
+	fpcs_ia.setNumberOfSamples (nr_samples);
 	
 	// Set the input source and target
-	icp.setInputSource (cloud_source_registered);
-	icp.setInputTarget (tgt);
+	fpcs_ia.setInputSource (cloud_source_registered);
+	fpcs_ia.setInputTarget (tgt);
 	
 	// Perform the alignment
-	icp.align (*cloud_source_registered);
-	if (!icp.hasConverged ()) {
+	fpcs_ia.align (*cloud_source_registered);
+	/*if (!fpcs_ia.hasConverged ()) {
 		PCL_ERROR ("\nICP has not converged.\n");
 		return (-1);
-	}
+	}*/
 	
-	std::cout << " \nICP has converged, score is  " << icp.getFitnessScore () << std::endl;
+	std::cout << " \nICP has converged, score is  " << fpcs_ia.getFitnessScore () << std::endl;
 	// Obtain the transformation that aligned cloud_source to cloud_source_registered
 	Eigen::Matrix4d transformation_matrix = Eigen::Matrix4d::Identity ();
-	transformation_matrix = icp.getFinalTransformation ().cast<double>();
+	transformation_matrix = fpcs_ia.getFinalTransformation ().cast<double>();
 	
 	std::cout << " Matrix " << std::endl;
 	print4x4Matrix (transformation_matrix);
@@ -119,7 +123,7 @@ int main (int argc, char *argv[])
 	compute (*tgt, *cloud_source_registered);
 	
 	pcl::console::print_highlight ("Visualisation \n");
-	vizu (cloud_source, cloud_target, *cloud_source_registered, iterations);
+	vizu (cloud_source, cloud_target, *cloud_source_registered);
 	
 	return (0);
 }
