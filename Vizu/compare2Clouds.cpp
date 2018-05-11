@@ -102,9 +102,9 @@ int main (int argc, char *argv[])
 	
 	// Create two vertically separated viewports
 	int v1 (0);
-	int v2 (1);
-	viewer.createViewPort (0.0, 0.0, 0.5, 1.0, v1);
-	viewer.createViewPort (0.5, 0.0, 1.0, 1.0, v2);
+	//int v2 (1);
+	viewer.createViewPort (0.0, 0.0, 1.0, 1.0, v1); //viewer.createViewPort (0.0, 0.0, 0.5, 1.0, v1);
+	//viewer.createViewPort (0.5, 0.0, 1.0, 1.0, v2);
 	
 	float bckgr_gray_level = 0.0;  // Black
 	float txt_gray_lvl = 1.0 - bckgr_gray_level;
@@ -115,16 +115,16 @@ int main (int argc, char *argv[])
 	
 	// cloud_b is red
 	pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> cloud_b_color_h (cloud_b, 180, 20, 20);
-	viewer.addPointCloud (cloud_b, cloud_b_color_h, "cloud_b", v2);
+	viewer.addPointCloud (cloud_b, cloud_b_color_h, "cloud_b", v1);
 	
 	// Adding text descriptions in each viewport
 	viewer.addText ("Green: cloud a", 10, 15, 16, txt_gray_lvl, txt_gray_lvl, txt_gray_lvl, "info_1", v1);
-	viewer.addText ("Red: cloud b", 10, 15, 16, txt_gray_lvl, txt_gray_lvl, txt_gray_lvl, "info_2", v2);	
+	viewer.addText ("Red: cloud b", 15, 15, 16, txt_gray_lvl, txt_gray_lvl, txt_gray_lvl, "info_2", v1);	
 	
 	
 	// Set background color
 	viewer.setBackgroundColor ((int) 255 * txt_gray_lvl, (int) 255 * txt_gray_lvl, (int) 255 * txt_gray_lvl, v1);
-	viewer.setBackgroundColor ((int) 255 * txt_gray_lvl, (int) 255 * txt_gray_lvl, (int) 255 * txt_gray_lvl, v2);
+	//viewer.setBackgroundColor ((int) 255 * txt_gray_lvl, (int) 255 * txt_gray_lvl, (int) 255 * txt_gray_lvl, v1);
 	
 	// Display the visualiser
 	while (!viewer.wasStopped ())

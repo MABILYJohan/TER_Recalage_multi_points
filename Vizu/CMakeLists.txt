@@ -14,3 +14,6 @@ target_link_libraries(vizu ${PCL_LIBRARIES})
 add_executable(vizuDS vizuDownSample.cpp )
 target_link_libraries(vizuDS ${PCL_LIBRARIES})
 
+add_executable(vizuCC compare2Clouds.cpp )
+target_link_libraries(vizuCC ${PCL_LIBRARIES})
+
