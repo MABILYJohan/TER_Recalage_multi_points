@@ -20,7 +20,7 @@
  * This function takes the reference of a 4x4 matrix and prints
  * the rigid transformation in an human readable way.
  **/
-void print4x4Matrix (const Eigen::Matrix4d & matrix)
+void print4x4Matrix (const Eigen::Matrix4f & matrix)
 {
   printf ("Rotation matrix :\n");
   printf ("    | %6.3f %6.3f %6.3f | \n", matrix (0, 0), matrix (0, 1), matrix (0, 2));
@@ -73,7 +73,7 @@ int main (int argc, char *argv[])
 	copyPointCloud (cloud_target, *tgt);
 	
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_source_registered (new PointCloud<PointXYZ>);;
-	copyPointCloud (*src, *cloud_source_registered);
+	//~ copyPointCloud (*src, *cloud_source_registered);
 	
 	// Set the max correspondence distance to 1m (e.g., correspondences with higher distances will be ignored)
 	double maxCorDist = 1;
@@ -96,7 +96,8 @@ int main (int argc, char *argv[])
 	icp.setEuclideanFitnessEpsilon (difDistEpsilon);
 	
 	// Set the input source and target
-	icp.setInputSource (cloud_source_registered);
+	//~ icp.setInputSource (cloud_source_registered);
+	icp.setInputSource (src);
 	icp.setInputTarget (tgt);
 	
 	// Perform the alignment
@@ -106,17 +107,20 @@ int main (int argc, char *argv[])
 		return (-1);
 	}
 	
-	std::cout << " \nICP has converged, score is  " << icp.getFitnessScore () << std::endl;
+	//~ std::cout << " \nICP has converged in " << time.toc () << "ms, score is  " << icp.getFitnessScore () << std::endl;
+	print_info ("ICP has converged with score of "); print_value ("%f", icp.getFitnessScore ()); print_info (" in "); print_value ("%g", time.toc ()); print_info (" ms : \n");
 	// Obtain the transformation that aligned cloud_source to cloud_source_registered
-	Eigen::Matrix4d transformation_matrix = Eigen::Matrix4d::Identity ();
-	transformation_matrix = icp.getFinalTransformation ().cast<double>();
+	Eigen::Matrix4f transformation_matrix = icp.getFinalTransformation();
+	transformation_matrix = icp.getFinalTransformation ();
 	
 	std::cout << " Matrix " << std::endl;
 	print4x4Matrix (transformation_matrix);
 	
+	pcl::transformPointCloud(cloud_source, *cloud_source_registered, transformation_matrix);
+	
 	// Compute the Hausdorff distance
 	pcl::console::print_highlight ("Hausdorff\n");
-	compute (*tgt, *cloud_source_registered);
+	compute (cloud_target, *cloud_source_registered);
 	
 	pcl::console::print_highlight ("Visualisation \n");
 	vizu (cloud_source, cloud_target, *cloud_source_registered, iterations);
