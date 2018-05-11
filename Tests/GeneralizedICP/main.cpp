@@ -9,7 +9,7 @@
 #include <pcl/io/ply_io.h>
 #include <pcl/point_types.h>
 #include <pcl/registration/icp.h>
-//#include <pcl/console/time.h>   // TicToc
+#include <pcl/console/time.h>   // TicToc
 #include <pcl/io/pcd_io.h>
 
 #include <pcl/registration/gicp.h>
@@ -23,6 +23,7 @@ using namespace pcl;
 using namespace pcl::io;
 using namespace std;
 
+typedef PointXYZ PointT;
 
 /**
  * This function takes the reference of a 4x4 matrix and prints
@@ -37,7 +38,6 @@ void print4x4Matrix (const Eigen::Matrix4f & matrix)
   printf ("Translation vector :\n");
   printf ("t = < %6.3f, %6.3f, %6.3f >\n\n", matrix (0, 3), matrix (1, 3), matrix (2, 3));
 }
-
 
 int main (int argc, char *argv[])
 {
@@ -70,8 +70,8 @@ int main (int argc, char *argv[])
 	PointCloud<PointXYZ> cloud_target = downSample_cloud (BIGcloud_target);
 	
 	
-	////////////////////////////////////////////////////////////////////
-	// GENERALIZED //
+	//~ ////////////////////////////////////////////////////////////////////
+	//~ // GENERALIZED //
 	console::print_highlight ("Generalized iterative closest point...\n");
 	
 	std::cout << " Loading parameters " << std::endl;
@@ -81,110 +81,113 @@ int main (int argc, char *argv[])
 	PointCloud<PointT>::Ptr tgt (new PointCloud<PointT>);
 	copyPointCloud (cloud_target, *tgt);
 	PointCloud<PointT>::Ptr output (new PointCloud<PointT>);
-	copyPointCloud (*src, *output);
+	//~ copyPointCloud (*src, *output);
 	
-	GeneralizedIterativeClosestPoint<PointT, PointT> reg;
-	reg.setInputSource (output);
-	reg.setInputTarget (tgt);
+	GeneralizedIterativeClosestPoint<PointT, PointT> gicp;
+	gicp.setInputSource (src);
+	gicp.setInputTarget (tgt);
 	
 	// Set the max correspondence distance to 1m (e.g., correspondences with higher distances will be ignored)
 	double maxCorDist = 1;
 	if (argv[3]!=NULL && atof(argv[3])>0)	maxCorDist = atof(argv[3]);
-	reg.setMaxCorrespondenceDistance (maxCorDist);
+	gicp.setMaxCorrespondenceDistance (maxCorDist);
 	
 	// Set the maximum number of iterations (criterion 1)
 	int iterations = 1;
 	if (argv[4]!=NULL && atoi(argv[4])>0)	iterations = atoi(argv[4]);
-	reg.setMaximumIterations (iterations);
+	gicp.setMaximumIterations (iterations);
 	
 	// Set the transformation epsilon (criterion 2)
 	double epsilon = 1e-8;
 	if (argv[5]!=NULL && atof(argv[5])>0)	epsilon = atof(argv[5]);
-	reg.setTransformationEpsilon (epsilon);
+	gicp.setTransformationEpsilon (epsilon);
 	
 	// Set the euclidean distance difference epsilon (criterion 3)
 	double difDistEpsilon = 1;
 	if (argv[6]!=NULL && atoi(argv[6])>0)	difDistEpsilon = atoi(argv[6]);
-	reg.setEuclideanFitnessEpsilon (difDistEpsilon);
+	gicp.setEuclideanFitnessEpsilon (difDistEpsilon);
 	
+	pcl::console::TicToc time;
+	time.tic ();
 	
 	// Register
 	std::cout << " Align " << std::endl;
-	reg.align (*output);
-	if (!reg.hasConverged ()) {
-		PCL_ERROR ("\nreg has not converged.\n");
+	gicp.align (*output);
+	if (!gicp.hasConverged ()) {
+		PCL_ERROR ("\ngicp has not converged.\n");
 		return (-1);
 	}
-	std::cout << " \nreg has converged with score of  " << reg.getFitnessScore () << std::endl;
+	//~ std::cout << " \ngicp has converged with score of  " << gicp.getFitnessScore () << std::endl;
 	
-	bool check = false;
-	if (check)
-	{
-		// Check again, for all possible caching schemes
-		for (int iter = 0; iter < 4; iter++)
-		{
-			std::cout << " \tCheck " << iter+1 << std::endl;
-			bool force_cache = (bool) iter/2;
-			bool force_cache_reciprocal = (bool) iter%2;
-			pcl::search::KdTree<PointT>::Ptr tree(new pcl::search::KdTree<PointT>);
-			// Ensure that, when force_cache is not set, we are robust to the wrong input
-			if (force_cache)
-				tree->setInputCloud (tgt);
-			reg.setSearchMethodTarget (tree, force_cache);
+	//~ bool check = false;
+	//~ if (check)
+	//~ {
+		//~ // Check again, for all possible caching schemes
+		//~ for (int iter = 0; iter < 4; iter++)
+		//~ {
+			//~ std::cout << " \tCheck " << iter+1 << std::endl;
+			//~ bool force_cache = (bool) iter/2;
+			//~ bool force_cache_reciprocal = (bool) iter%2;
+			//~ pcl::search::KdTree<PointT>::Ptr tree(new pcl::search::KdTree<PointT>);
+			//~ // Ensure that, when force_cache is not set, we are robust to the wrong input
+			//~ if (force_cache)
+				//~ tree->setInputCloud (tgt);
+			//~ gicp.setSearchMethodTarget (tree, force_cache);
 			
-			pcl::search::KdTree<PointT>::Ptr tree_recip (new pcl::search::KdTree<PointT>);
-			if (force_cache_reciprocal)
-				tree_recip->setInputCloud (output);
-			reg.setSearchMethodSource (tree_recip, force_cache_reciprocal);
+			//~ pcl::search::KdTree<PointT>::Ptr tree_recip (new pcl::search::KdTree<PointT>);
+			//~ if (force_cache_reciprocal)
+				//~ tree_recip->setInputCloud (src);
+			//~ gicp.setSearchMethodSource (tree_recip, force_cache_reciprocal);
 			
-			// Register
-			reg.align (*output);
-			if (!reg.hasConverged ()) {
-				std::cout << " \treg has not converged " << std::endl;
-			}
-			std::cout << " \treg has converged with score of  " << reg.getFitnessScore () << std::endl;
-		}
-	}
+			//~ // Register
+			//~ gicp.align (*output);
+			//~ if (!gicp.hasConverged ()) {
+				//~ std::cout << " \tgicp has not converged " << std::endl;
+			//~ }
+			//~ std::cout << " \tgicp has converged with score of  " << gicp.getFitnessScore () << std::endl;
+		//~ }
+	//~ }
 	
-	// Test guess matrix
-	std::cout << " Add test guess matrix " << std::endl;
-	Eigen::Isometry3f transform = Eigen::Isometry3f (Eigen::AngleAxisf (0.25 * M_PI, Eigen::Vector3f::UnitX ())
-													* Eigen::AngleAxisf (0.50 * M_PI, Eigen::Vector3f::UnitY ())
-													* Eigen::AngleAxisf (0.33 * M_PI, Eigen::Vector3f::UnitZ ()));
-	transform.translation () = Eigen::Vector3f (0.1, 0.2, 0.3);
-	PointCloud<PointT>::Ptr transformed_tgt (new PointCloud<PointT>);
-	pcl::transformPointCloud (*tgt, *transformed_tgt, transform.matrix ()); // transformed_tgt is now a copy of tgt with a transformation matrix applied
+	//~ // Test guess matrix
+	//~ std::cout << " Add test guess matrix " << std::endl;
+	//~ Eigen::Isometry3f transform = Eigen::Isometry3f (Eigen::AngleAxisf (0.25 * M_PI, Eigen::Vector3f::UnitX ())
+													//~ * Eigen::AngleAxisf (0.50 * M_PI, Eigen::Vector3f::UnitY ())
+													//~ * Eigen::AngleAxisf (0.33 * M_PI, Eigen::Vector3f::UnitZ ()));
+	//~ transform.translation () = Eigen::Vector3f (0.1, 0.2, 0.3);
+	//~ PointCloud<PointT>::Ptr transformed_tgt (new PointCloud<PointT>);
+	//~ pcl::transformPointCloud (*tgt, *transformed_tgt, transform.matrix ()); // transformed_tgt is now a copy of tgt with a transformation matrix applied
 	
-	GeneralizedIterativeClosestPoint<PointT, PointT> reg_guess;
-	//~ reg_guess.setInputSource (src);
-	reg_guess.setInputSource (output);
-	reg_guess.setInputTarget (transformed_tgt);
-	reg_guess.setMaxCorrespondenceDistance (maxCorDist);
-	reg_guess.setMaximumIterations (iterations);
-	reg_guess.setTransformationEpsilon (epsilon);
-	reg_guess.setEuclideanFitnessEpsilon (difDistEpsilon);
-	reg_guess.align (*output, transform.matrix ());
+	//~ GeneralizedIterativeClosestPoint<PointT, PointT> gicp_guess;
+	//gicp_guess.setInputSource (src);
+	//~ gicp_guess.setInputSource (output);
+	//~ gicp_guess.setInputTarget (transformed_tgt);
+	//~ gicp_guess.setMaxCorrespondenceDistance (maxCorDist);
+	//~ gicp_guess.setMaximumIterations (iterations);
+	//~ gicp_guess.setTransformationEpsilon (epsilon);
+	//~ gicp_guess.setEuclideanFitnessEpsilon (difDistEpsilon);
+	//~ gicp_guess.align (*output, transform.matrix ());
 	
-	if (!reg_guess.hasConverged ()) {
-		PCL_ERROR ("\treg_guess has not converged.\n");
-		return (-1);
-	}
-	std::cout << " \treg_guess has converged with score of  " << reg_guess.getFitnessScore () << std::endl;
+	//~ if (!gicp_guess.hasConverged ()) {
+		//~ PCL_ERROR ("\tgicp_guess has not converged.\n");
+		//~ return (-1);
+	//~ }
+	print_info ("GICP has converged with score of "); print_value ("%f", gicp.getFitnessScore ()); print_info (" in "); print_value ("%g", time.toc ()); print_info (" ms : \n");
 	std::cout << std::endl;
 	
+	Eigen::Matrix4f trans_final = gicp.getFinalTransformation();
+	std::cout << " FINAL " << std::endl;
+	print4x4Matrix(trans_final);
+	
+	// apply transform to data cloud (to fit model cloud)
+    console::print_highlight (" apply transform  ...\n");
+    pcl::transformPointCloud(cloud_source, *output, trans_final);
 	
 	// Compute the Hausdorff distance
 	pcl::console::print_highlight ("Hausdorff\n");
-	compute (cloud_target, *output);
+	compute_Hausdorff (cloud_target, *output);
 	
 	// Visualization
-	
-	char name[20] = "Generalized ICP";
-	pcl::visualization::PCLVisualizer viewer = vizu (cloud_source,
-													cloud_target,
-													*output,
-													iterations,
-													name);
+	vizu (cloud_source, cloud_target, *output, iterations);
 	
 	return 0;
 }
