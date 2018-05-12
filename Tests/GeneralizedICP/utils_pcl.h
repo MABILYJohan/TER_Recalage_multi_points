@@ -17,7 +17,6 @@ using namespace pcl::io;
 using namespace pcl::console;
 using namespace pcl::search;
 
-
 PointCloud<PointXYZ>::Ptr loadCloud (char *fileName)
 {
 	PointCloud<PointXYZ>::Ptr myCloud (new PointCloud<PointXYZ>);
@@ -59,14 +58,14 @@ PointCloud<PointXYZ> downSample_cloud (PointCloud<PointXYZ>::Ptr originalCloud)
 {
 	PointCloud<PointXYZ> reductCloud;
 	VoxelGrid<PointXYZ> grid;
-	grid.setLeafSize (1.5, 1.5, 1.5);
+	grid.setLeafSize (1, 1, 1);
 	grid.setInputCloud (originalCloud);
 	grid.filter (reductCloud);
 	
 	return reductCloud;
 }
 
-void compute (PointCloud<PointXYZ> &cloud_a, PointCloud<PointXYZ> &cloud_b)
+void compute_Hausdorff (PointCloud<PointXYZ> &cloud_a, PointCloud<PointXYZ> &cloud_b)
 {
 	typedef PointXYZ PointType;
 	typedef PointCloud<PointXYZ> Cloud;
@@ -116,14 +115,13 @@ void compute (PointCloud<PointXYZ> &cloud_a, PointCloud<PointXYZ> &cloud_b)
 	print_info (" ]\n");
 }
 
-pcl::visualization::PCLVisualizer vizu (PointCloud<PointXYZ> cloud_source, 
-										PointCloud<PointXYZ> cloud_target,
-										PointCloud<PointXYZ> cloud_icp,
-										int iterations,
-										char *name)
+void vizu (PointCloud<PointXYZ> cloud_source, 
+			PointCloud<PointXYZ> cloud_target,
+			PointCloud<PointXYZ> cloud_icp,
+			int iterations)
 {
 	// Visualization
-	pcl::visualization::PCLVisualizer viewer (name);
+	pcl::visualization::PCLVisualizer viewer ("ICP");
 	
 	PointCloud<PointXYZ>::Ptr cloud_source_vizu (new PointCloud<PointXYZ>);
 	copyPointCloud (cloud_source, *cloud_source_vizu);
@@ -173,8 +171,6 @@ pcl::visualization::PCLVisualizer vizu (PointCloud<PointXYZ> cloud_source,
 	{
 		viewer.spinOnce ();
 	}
-	
-	return viewer;
 }
 
 
