@@ -73,8 +73,11 @@ int main (int argc, char *argv[])
 	}
 	std::cout << " loading cloud src " << std::endl;
 	PointCloud<PointXYZ>::Ptr BIGcloud_source = loadCloud(argv[1]);
+	PointCloud<PointXYZ>::Ptr BIGcloud_source2 = loadCloud(argv[3]);
 	std::cout << " loading cloud target " << std::endl;
 	PointCloud<PointXYZ>::Ptr BIGcloud_target = loadCloud(argv[2]);
+	PointCloud<PointXYZ>::Ptr BIGcloud_target2 = loadCloud(argv[4]);
+	
 	
 	//
 	// Downsample for consistency and speed
@@ -84,6 +87,8 @@ int main (int argc, char *argv[])
 	
 	PointCloud<PointXYZ> cloud_source = downSample_cloud (BIGcloud_source);
 	PointCloud<PointXYZ> cloud_target = downSample_cloud (BIGcloud_target);
+	PointCloud<PointXYZ> cloud_source2 = downSample_cloud (BIGcloud_source2);
+	PointCloud<PointXYZ> cloud_target2 = downSample_cloud (BIGcloud_target2);
 	PointCloud<PointXYZ>::Ptr cloud_reg (new PointCloud<PointXYZ>);
 	
 	////////////////////////////////////////////////////////////////////
@@ -95,23 +100,23 @@ int main (int argc, char *argv[])
 	pcl::JointIterativeClosestPoint<PointXYZ, PointXYZ> jicp;
 	// Set the max correspondence distance to 1m (e.g., correspondences with higher distances will be ignored)
 	double maxCorDist = 1;
-	if (argv[3]!=NULL && atof(argv[3])>0)	maxCorDist = atof(argv[3]);
+	if (argv[5]!=NULL && atof(argv[5])>0)	maxCorDist = atof(argv[5]);
 	jicp.setMaxCorrespondenceDistance (maxCorDist);
 	
 	// Set the maximum number of iterations (criterion 1)
 	int iterations = 1;
-	if (argv[4]!=NULL && atoi(argv[4])>0)	iterations = atoi(argv[4]);
+	if (argv[6]!=NULL && atoi(argv[6])>0)	iterations = atoi(argv[6]);
 	jicp.setMaximumIterations (iterations);
 	
-	//~ // Set the transformation epsilon (criterion 2)
-	//~ double epsilon = 1e-8;
-	//~ if (argv[5]!=NULL && atof(argv[5])>0)	epsilon = atof(argv[5]);
-	//~ icp.setTransformationEpsilon (epsilon);
+	// Set the transformation epsilon (criterion 2)
+	double epsilon = 1e-8;
+	if (argv[7]!=NULL && atof(argv[7])>0)	epsilon = atof(argv[7]);
+	jicp.setTransformationEpsilon (epsilon);
 	
-	//~ // Set the euclidean distance difference epsilon (criterion 3)
-	//~ double difDistEpsilon = 1;
-	//~ if (argv[6]!=NULL && atoi(argv[6])>0)	difDistEpsilon = atoi(argv[6]);
-	//~ icp.setEuclideanFitnessEpsilon (difDistEpsilon);
+	// Set the euclidean distance difference epsilon (criterion 3)
+	double difDistEpsilon = 1;
+	if (argv[8]!=NULL && atoi(argv[8])>0)	difDistEpsilon = atoi(argv[8]);
+	jicp.setEuclideanFitnessEpsilon (difDistEpsilon);
 	
 	std::cout << " maxIterations(" << iterations <<")\n" 
 			<< " maxCorDist(" << maxCorDist <<")\n" 
@@ -122,22 +127,33 @@ int main (int argc, char *argv[])
 	copyPointCloud (cloud_source, *src);
 	PointCloud<PointXYZ>::Ptr tgt (new PointCloud<PointXYZ>);
 	copyPointCloud (cloud_target, *tgt);
+	PointCloud<PointXYZ>::Ptr src2 (new PointCloud<PointXYZ>);
+	copyPointCloud (cloud_source2, *src2);
+	PointCloud<PointXYZ>::Ptr tgt2 (new PointCloud<PointXYZ>);
+	copyPointCloud (cloud_target2, *tgt2);
 	
 	Eigen::Matrix4f trans_final;
 	
-	copyPointCloud (*src, *cloud_reg);
-	jicp.addInputSource (cloud_reg);
+	//~ copyPointCloud (*src, *cloud_reg);
+	jicp.addInputSource (src);
 	jicp.addInputTarget (tgt);
 	//
 	
+	jicp.addInputSource (src2);
+	jicp.addInputTarget (tgt2);
 	
-	//~ // Add a median distance rejector
-	//~ registration::CorrespondenceRejectorMedianDistance::Ptr rej_med (new registration::CorrespondenceRejectorMedianDistance);
-	//~ rej_med->setMedianFactor (4.0);
-	//~ jicp.addCorrespondenceRejector (rej_med);
-	//~ // Also add a SaC rejector
-	//~ registration::CorrespondenceRejectorSampleConsensus<PointXYZ>::Ptr rej_samp (new registration::CorrespondenceRejectorSampleConsensus<PointXYZ>);
-	//~ jicp.addCorrespondenceRejector (rej_samp);
+	
+	// Add a median distance rejector
+	registration::CorrespondenceRejectorMedianDistance::Ptr rej_med (new registration::CorrespondenceRejectorMedianDistance);
+	rej_med->setMedianFactor (4.0);
+	jicp.addCorrespondenceRejector (rej_med);
+	// Also add a SaC rejector
+	registration::CorrespondenceRejectorSampleConsensus<PointXYZ>::Ptr rej_samp (new registration::CorrespondenceRejectorSampleConsensus<PointXYZ>);
+	jicp.addCorrespondenceRejector (rej_samp);
+	
+	
+	pcl::console::TicToc time;
+	time.tic ();
 	
 	//~ Eigen::Matrix4f trans_final;
 	
@@ -170,34 +186,46 @@ int main (int argc, char *argv[])
 		// Register
 		jicp.align (*cloud_reg);
 		trans_final = jicp.getFinalTransformation ();
-		//~ for (int y = 0; y < 4; y++)
-			//~ for (int x = 0; x < 4; x++)
-			//~ {
-				//~ trans_final (y, x);
-				//~ delta_transform (y, x);
-			//~ }
+		//for (int y = 0; y < 4; y++)
+			//for (int x = 0; x < 4; x++)
+			//{
+			//	trans_final (y, x);
+			//	delta_transform (y, x);
+			//}
 		
-		//~ if (cloud_reg.empty () == true) printf ("cloud_reg empty\n"); // By definition, returns an empty cloud
+		//if (cloud_reg.empty () == true) printf ("cloud_reg empty\n"); // By definition, returns an empty cloud
 		
 		//~ // Clear
 		//~ jicp.clearInputSources ();
 		//~ jicp.clearInputTargets ();
 	//~ }
 	
-	std::cout << " FINAL " << std::endl;
-	print4x4Matrix(trans_final);
+	print_info ("ICP has converged with score of "); print_value ("%f", jicp.getFitnessScore ()); print_info (" in "); print_value ("%g", time.toc ()); print_info (" ms : \n");
+	// Obtain the transformation that aligned cloud_source to cloud_source_registered
+	Eigen::Matrix4f transformation_matrix = jicp.getFinalTransformation();
+	
+	std::cout << " Matrix " << std::endl;
+	print4x4Matrix (transformation_matrix);
 	
 	////////////////////////////////////////////////////////////////////
 	
+	pcl::console::print_highlight ("Cloud 1\n");
 	//~ copyPointCloud (*src, *cloud_reg);
-	pcl::transformPointCloud(*src, *cloud_reg, trans_final);
-	
+	pcl::transformPointCloud(cloud_source, *cloud_reg, trans_final);
 	// Compute the Hausdorff distance
 	pcl::console::print_highlight ("Hausdorff\n");
-	compute (*tgt, *cloud_reg);
+	compute_Hausdorff (*tgt, *cloud_reg);
+	//~ // Visualization
+	vizu (cloud_source, cloud_target, *cloud_reg, iterations);
 	
-	// Visualization
-	vizu (*src, *tgt, *cloud_reg, iterations);
+	
+	pcl::console::print_highlight ("Cloud 2\n");
+	pcl::transformPointCloud(cloud_source2, *cloud_reg, trans_final);
+	// Compute the Hausdorff distance
+	pcl::console::print_highlight ("Hausdorff\n");
+	compute_Hausdorff (*tgt2, *cloud_reg);
+	//~ // Visualization
+	vizu (cloud_source2, cloud_target2, *cloud_reg, iterations);
 	
 	return 0;
 }
