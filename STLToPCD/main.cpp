@@ -28,7 +28,7 @@ int main(int argc, char *argv[])
 		// Sauvegarde du nuage au format PCD
 		std::stringstream ss;
 		ss << i-1 << ".pcd";
-		pcl::io::savePCDFile (ss.str (), *mycloud, true);
+		pcl::io::savePCDFileASCII (ss.str (), *mycloud);
 	}
 	
 	
