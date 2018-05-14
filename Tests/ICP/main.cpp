@@ -85,19 +85,19 @@ int main (int argc, char *argv[])
 	if (argv[4]!=NULL && atoi(argv[4])>0)	iterations = atoi(argv[4]);
 	icp.setMaximumIterations (iterations);
 	
-	// Set the transformation epsilon (criterion 2)
-	double epsilon = 1e-8;
-	if (argv[5]!=NULL && atof(argv[5])>0)	epsilon = atof(argv[5]);
-	icp.setTransformationEpsilon (epsilon);
+	//~ // Set the transformation epsilon (criterion 2)
+	//~ double epsilon = 1e-8;
+	//~ if (argv[5]!=NULL && atof(argv[5])>0)	epsilon = atof(argv[5]);
+	//~ icp.setTransformationEpsilon (epsilon);
 	
-	// Set the euclidean distance difference epsilon (criterion 3)
-	double difDistEpsilon = 1;
-	if (argv[6]!=NULL && atoi(argv[6])>0)	difDistEpsilon = atoi(argv[6]);
-	icp.setEuclideanFitnessEpsilon (difDistEpsilon);
+	//~ // Set the euclidean distance difference epsilon (criterion 3)
+	//~ double difDistEpsilon = 1;
+	//~ if (argv[6]!=NULL && atoi(argv[6])>0)	difDistEpsilon = atoi(argv[6]);
+	//~ icp.setEuclideanFitnessEpsilon (difDistEpsilon);
 	
 	// Set the input source and target
 	//~ icp.setInputSource (cloud_source_registered);
-	icp.setInputSource (cloud_source_registered);
+	icp.setInputSource (src);
 	icp.setInputTarget (tgt);
 	
 	// Perform the alignment
