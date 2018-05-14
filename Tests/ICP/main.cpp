@@ -73,7 +73,7 @@ int main (int argc, char *argv[])
 	copyPointCloud (cloud_target, *tgt);
 	
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_source_registered (new PointCloud<PointXYZ>);;
-	//~ copyPointCloud (*src, *cloud_source_registered);
+	copyPointCloud (*src, *cloud_source_registered);
 	
 	// Set the max correspondence distance to 1m (e.g., correspondences with higher distances will be ignored)
 	double maxCorDist = 1;
@@ -97,7 +97,7 @@ int main (int argc, char *argv[])
 	
 	// Set the input source and target
 	//~ icp.setInputSource (cloud_source_registered);
-	icp.setInputSource (src);
+	icp.setInputSource (cloud_source_registered);
 	icp.setInputTarget (tgt);
 	
 	// Perform the alignment
@@ -115,7 +115,7 @@ int main (int argc, char *argv[])
 	std::cout << " Matrix " << std::endl;
 	print4x4Matrix (transformation_matrix);
 	
-	pcl::transformPointCloud(cloud_source, *cloud_source_registered, transformation_matrix);
+	//~ pcl::transformPointCloud(cloud_source, *cloud_source_registered, transformation_matrix);
 	
 	// Compute the Hausdorff distance
 	pcl::console::print_highlight ("Hausdorff\n");
