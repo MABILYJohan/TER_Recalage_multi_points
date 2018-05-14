@@ -111,7 +111,6 @@ int main (int argc, char *argv[])
 	print_info ("ICP has converged with score of "); print_value ("%f", icp.getFitnessScore ()); print_info (" in "); print_value ("%g", time.toc ()); print_info (" ms : \n");
 	// Obtain the transformation that aligned cloud_source to cloud_source_registered
 	Eigen::Matrix4f transformation_matrix = icp.getFinalTransformation();
-	transformation_matrix = icp.getFinalTransformation ();
 	
 	std::cout << " Matrix " << std::endl;
 	print4x4Matrix (transformation_matrix);
