@@ -45,7 +45,7 @@ int main (int argc, char *argv[])
 	if (argc-1 < 2)
 	{
 		printf ("Usage :\n");
-		printf ("\t\t%s file1.stl/pcd file2.stl/pcd [maxCorDist] [iterations] [epsilon] [difDistEpsilon]\n", argv[0]);
+		printf ("\t\t%s file1.stl/pcd file2.stl/pcd [NbTreads] [ApproxOverlap] [delta] [NbOfSamples]\n", argv[0]);
 		PCL_ERROR ("Provide two stl or pcd files.\n");
 		return (-1);
 	}
@@ -65,13 +65,13 @@ int main (int argc, char *argv[])
 	time.tic ();
 	
 	 // transform the source cloud by a large amount
-  Eigen::Vector3f initial_offset (1.f, 0.f, 0.f);
-  float angle = static_cast<float> (M_PI) / 2.f;
-  Eigen::Quaternionf initial_rotation (cos (angle / 2.f), 0, 0, sin (angle / 2.f));
-  PointCloud<PointXYZ> cloud_source_transformed;
-  transformPointCloud (cloud_source, cloud_source_transformed, initial_offset, initial_rotation);
+	Eigen::Vector3f initial_offset (1.f, 0.f, 0.f);
+	float angle = static_cast<float> (M_PI) / 2.f;
+	Eigen::Quaternionf initial_rotation (cos (angle / 2.f), 0, 0, sin (angle / 2.f));
+	PointCloud<PointXYZ> cloud_source_transformed;
+	transformPointCloud (cloud_source, cloud_source_transformed, initial_offset, initial_rotation);
 	
-	pcl::console::print_highlight ("iterative closest point...\n");
+	pcl::console::print_highlight ("FPCS...\n");
 	pcl::registration::FPCSInitialAlignment<pcl::PointXYZ, pcl::PointXYZ> fpcs_ia;
 	
 	PointCloud<PointXYZ>::Ptr src (new PointCloud<PointXYZ>);
@@ -82,7 +82,7 @@ int main (int argc, char *argv[])
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_source_registered (new PointCloud<PointXYZ>);;
 	copyPointCloud (*src, *cloud_source_registered);
 	
-	// Set the max correspondence distance to 1m (e.g., correspondences with higher distances will be ignored)
+	// Set the number of threads
 	int nr_threads = 1;
 	if (argv[3]!=NULL && atoi(argv[3])>0)	nr_threads = atoi(argv[3]);
 	fpcs_ia.setNumberOfThreads (nr_threads);
@@ -91,11 +91,11 @@ int main (int argc, char *argv[])
 	if (argv[4]!=NULL && atof(argv[4])>0)	approx_overlap = atof(argv[4]);
 	fpcs_ia.setApproxOverlap (approx_overlap);
 	// Set the transformation epsilon (criterion 2)
-	double delta = 1.f;
+	double delta = 0.5f;
 	if (argv[5]!=NULL && atof(argv[5])>0)	delta = atof(argv[5]);
 	fpcs_ia.setDelta (delta, true);
 	// Set the euclidean distance difference epsilon (criterion 3)
-	int nr_samples = 100;
+	int nr_samples = 1000;
 	if (argv[6]!=NULL && atoi(argv[6])>0)	nr_samples = atoi(argv[6]);
 	fpcs_ia.setNumberOfSamples (nr_samples);
 	
@@ -105,10 +105,6 @@ int main (int argc, char *argv[])
 	
 	// Perform the alignment
 	fpcs_ia.align (*cloud_source_registered);
-	/*if (!fpcs_ia.hasConverged ()) {
-		PCL_ERROR ("\nICP has not converged.\n");
-		return (-1);
-	}*/
 	
 	std::cout << " \nICP has converged, score is  " << fpcs_ia.getFitnessScore () << std::endl;
 	// Obtain the transformation that aligned cloud_source to cloud_source_registered

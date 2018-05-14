@@ -110,8 +110,8 @@ void compute_Hausdorff (PointCloud<PointXYZ> &cloud_a, PointCloud<PointXYZ> &clo
 	
 	print_info ("[done, "); print_value ("%g", tt.toc ()); print_info (" ms : ");
 	print_info ("A->B: "); print_value ("%f", max_dist_a);
-	print_info (", B->A: "); print_value ("%f", max_dist_b);
-	print_info (", Hausdorff Distance: "); print_value ("%f", dist);
+	print_info (" B->A: "); print_value ("%f", max_dist_b);
+	print_info (" Hausdorff Distance: "); print_value ("%f", dist);
 	print_info (" ]\n");
 }
 

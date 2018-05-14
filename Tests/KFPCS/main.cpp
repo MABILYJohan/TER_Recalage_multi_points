@@ -1,5 +1,5 @@
 /************
- * TEST FPCS *
+ * TEST KFPCS *
  ************/
 
 
@@ -64,7 +64,7 @@ int main (int argc, char *argv[])
 	pcl::console::TicToc time;
 	time.tic ();
 		
-	pcl::console::print_highlight ("iterative closest point...\n");
+	pcl::console::print_highlight ("KFPCS...\n");
 	pcl::registration::KFPCSInitialAlignment<pcl::PointXYZ, pcl::PointXYZ> kfpcs_ia;
 	
 	PointCloud<PointXYZ>::Ptr src (new PointCloud<PointXYZ>);

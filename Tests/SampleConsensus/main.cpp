@@ -1,5 +1,5 @@
 /************
- * TEST FPCS *
+ * TEST Sample Consensus *
  ************/
 
 

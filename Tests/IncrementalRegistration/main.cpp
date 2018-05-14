@@ -1,5 +1,5 @@
 /************
- * TEST Meta Registration *
+ * TEST Incremental Registration *
  ************/
 
 
@@ -55,7 +55,7 @@ int main (int argc, char *argv[])
 	pcl::console::TicToc time;
 	time.tic ();
 	
-	pcl::console::print_highlight ("iterative closest point...\n");
+	pcl::console::print_highlight ("Incremental Registration...\n");
 	IterativeClosestPoint<PointXYZ,PointXYZ>::Ptr icp (new IterativeClosestPoint<PointXYZ,PointXYZ>);
 	
 	// Set the max correspondence distance to 1m (e.g., correspondences with higher distances will be ignored)
