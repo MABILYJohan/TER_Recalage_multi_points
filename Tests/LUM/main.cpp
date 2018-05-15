@@ -43,6 +43,7 @@
 #include <pcl/common/transforms.h>
 #include <pcl/registration/lum.h>
 #include <pcl/registration/correspondence_estimation.h>
+#include <pcl/filters/voxel_grid.h>
 
 #include <iostream>
 #include <string>
@@ -55,6 +56,17 @@ typedef Cloud::ConstPtr CloudConstPtr;
 typedef Cloud::Ptr CloudPtr;
 typedef std::pair<std::string, CloudPtr> CloudPair;
 typedef std::vector<CloudPair> CloudVector;
+
+pcl::PointCloud<pcl::PointXYZ> downSample_cloud(pcl::PointCloud<pcl::PointXYZ>::Ptr originalCloud)
+{
+	pcl::PointCloud<pcl::PointXYZ> reductCloud;
+	pcl::VoxelGrid<pcl::PointXYZ> grid;
+	grid.setLeafSize (1, 1, 1);
+	grid.setInputCloud (originalCloud);
+	grid.filter (reductCloud);
+	
+	return reductCloud;
+}
 
 int main (int argc, char **argv)
 {
@@ -85,6 +97,7 @@ int main (int argc, char **argv)
   {
     CloudPtr pc (new Cloud);
     pcl::io::loadPCDFile (argv[pcd_indices[i]], *pc);
+    *pc = downSample_cloud(pc);
     clouds.push_back (CloudPair (argv[pcd_indices[i]], pc));
     std::cout << "loading file: " << argv[pcd_indices[i]] << " size: " << pc->size () << std::endl;
     lum.addPointCloud (clouds[i].second);
@@ -92,14 +105,16 @@ int main (int argc, char **argv)
 
   for (int i = 0; i < iter; i++)
   {
+	std::cout << "=================\nIter " << i << "\n" << "clouds=" << clouds.size() << "\n" << std::endl;
     for (size_t i = 1; i < clouds.size (); i++)
       for (size_t j = 0; j < i; j++)
       {
         Eigen::Vector4f ci, cj;
         pcl::compute3DCentroid (*(clouds[i].second), ci);
         pcl::compute3DCentroid (*(clouds[j].second), cj);
+        std::cout << "ci =\n" << ci << "\ncj =\n" << cj << "\n" << std::endl;
         Eigen::Vector4f diff = ci - cj;
-
+        
         std::cout << i << " " << j << " " << diff.norm () << std::endl;
 
         if(diff.norm () < loopDist && (i - j == 1 || i - j > loopCount))
@@ -116,7 +131,7 @@ int main (int argc, char **argv)
         }
       }
 
-    lum.compute ();
+    lum.compute();
 
     for(size_t i = 0; i < lum.getNumVertices (); i++)
     {
@@ -129,6 +144,7 @@ int main (int argc, char **argv)
   {
     std::string result_filename (clouds[i].first);
     result_filename = result_filename.substr (result_filename.rfind ("/") + 1);
+    result_filename.append ("out.pcd");
     pcl::io::savePCDFileASCII (result_filename.c_str (), *(clouds[i].second));
     std::cout << "saving result to " << result_filename << std::endl;
   }
