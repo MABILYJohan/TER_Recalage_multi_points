@@ -61,9 +61,6 @@ int main (int argc, char *argv[])
 	pcl::PointCloud<pcl::PointXYZ> cloud_source = downSample_cloud (BIGcloud_source);
 	pcl::PointCloud<pcl::PointXYZ> cloud_target = downSample_cloud (BIGcloud_target);
 	
-	pcl::console::TicToc time;
-	time.tic ();
-	
 	 // transform the source cloud by a large amount
 	Eigen::Vector3f initial_offset (1.f, 0.f, 0.f);
 	float angle = static_cast<float> (M_PI) / 2.f;
@@ -103,10 +100,15 @@ int main (int argc, char *argv[])
 	fpcs_ia.setInputSource (cloud_source_registered);
 	fpcs_ia.setInputTarget (tgt);
 	
+	pcl::console::TicToc time;
+	time.tic ();
+	
 	// Perform the alignment
 	fpcs_ia.align (*cloud_source_registered);
 	
-	std::cout << " \nICP has converged, score is  " << fpcs_ia.getFitnessScore () << std::endl;
+	// Temps et score
+	print_info ("Score of "); print_value ("%f", fpcs_ia.getFitnessScore ()); print_info (" in "); print_value ("%g", time.toc ()); print_info (" ms : \n");
+	
 	// Obtain the transformation that aligned cloud_source to cloud_source_registered
 	Eigen::Matrix4d transformation_matrix = Eigen::Matrix4d::Identity ();
 	transformation_matrix = fpcs_ia.getFinalTransformation ().cast<double>();

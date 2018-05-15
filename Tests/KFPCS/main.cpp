@@ -60,9 +60,6 @@ int main (int argc, char *argv[])
 	pcl::console::print_highlight ("DownSampling...\n");
 	pcl::PointCloud<pcl::PointXYZ> cloud_source = downSample_cloud (BIGcloud_source);
 	pcl::PointCloud<pcl::PointXYZ> cloud_target = downSample_cloud (BIGcloud_target);
-	
-	pcl::console::TicToc time;
-	time.tic ();
 		
 	pcl::console::print_highlight ("KFPCS...\n");
 	pcl::registration::KFPCSInitialAlignment<pcl::PointXYZ, pcl::PointXYZ> kfpcs_ia;
@@ -87,22 +84,29 @@ int main (int argc, char *argv[])
 	double delta = 0.1f;
 	if (argv[5]!=NULL && atof(argv[5])>0)	delta = atof(argv[5]);
 	kfpcs_ia.setDelta (delta, false);
-	// Set the euclidean distance difference epsilon (criterion 3)
+	/*// Set the euclidean distance difference epsilon (criterion 3)
 	double abort_score = 0.0f;
 	if (argv[6]!=NULL && atof(argv[6])>0)	abort_score = atof(argv[6]);
-	kfpcs_ia.setScoreThreshold (abort_score);
+	kfpcs_ia.setScoreThreshold (abort_score);*/
+	// Set the euclidean distance difference epsilon (criterion 3)
+	int nr_samples = 1000;
+	if (argv[6]!=NULL && atoi(argv[6])>0)	nr_samples = atoi(argv[6]);
+	kfpcs_ia.setNumberOfSamples (nr_samples);
 	
 	// Set the input source and target
 	kfpcs_ia.setInputSource (cloud_source_registered);
 	kfpcs_ia.setInputTarget (tgt);
 	
+	pcl::console::TicToc time;
+	time.tic ();
+	
 	for (int i = 0; i < 1; i++)
 	{
 		// Perform the alignment
 		kfpcs_ia.align (*cloud_source_registered);
-
 	}
-	std::cout << " \nICP has converged, score is  " << kfpcs_ia.getFitnessScore () << std::endl;
+	
+	print_info ("Score of "); print_value ("%f", kfpcs_ia.getFitnessScore ()); print_info (" in "); print_value ("%g", time.toc ()); print_info (" ms : \n");
 	// Obtain the transformation that aligned cloud_source to cloud_source_registered
 	Eigen::Matrix4d transformation_matrix = Eigen::Matrix4d::Identity ();
 	transformation_matrix = kfpcs_ia.getFinalTransformation ().cast<double>();
