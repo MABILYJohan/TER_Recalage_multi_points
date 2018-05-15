@@ -27,7 +27,6 @@
 #include <pcl/console/time.h>   // TicToc
 
 using namespace std;
-using namespace pcl;
 using namespace pcl::io;
 using namespace pcl::console;
 using namespace pcl::search;
@@ -37,11 +36,17 @@ typedef pcl::PointXYZ PointT;
 typedef pcl::PointCloud<PointT> PointCloud;
 typedef pcl::PointNormal PointNormalT;
 typedef pcl::PointCloud<PointNormalT> PointCloudWithNormals;
-typedef PointXYZ PointType;
-typedef pcl::PointCloud<PointXYZ> Cloud;
+typedef pcl::PointXYZ PointType;
+typedef pcl::PointCloud<pcl::PointXYZ> Cloud;
 
-void compute (Cloud &cloud_a, Cloud &cloud_b)
+/*
+void compute (PointCloud cloud_Pa, PointCloud cloud_Pb)
 {
+	
+	Cloud cloud_a (new Cloud);
+	copyPointCloud (cloud_Pa, cloud_a);
+	Cloud cloud_b (new Cloud);
+	copyPointCloud (cloud_Pb, cloud_b);
 
 	// Estimate
 	TicToc tt;
@@ -88,7 +93,9 @@ void compute (Cloud &cloud_a, Cloud &cloud_b)
 	print_info (", Hausdorff Distance: "); print_value ("%f", dist);
 	print_info (" ]\n");
 }
+*/
 
+/*
 void vizu (Cloud cloud_source, 
 			Cloud cloud_target,
 			Cloud cloud_icp,
@@ -146,7 +153,7 @@ void vizu (Cloud cloud_source,
 		viewer.spinOnce ();
 	}
 }
-
+*/
 
 
 

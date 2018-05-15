@@ -156,7 +156,7 @@ void pairAlign (const PointCloud::Ptr cloud_src, const PointCloud::Ptr cloud_tgt
   PointCloudWithNormals::Ptr reg_result = points_with_normals_src;
   reg.setMaximumIterations (2);
 
-  for (int i = 0; i < 30; ++i)
+  for (int i = 0; i < 1; ++i)
   {
     PCL_INFO ("Iteration Nr. %d.\n", i);
 	
@@ -183,7 +183,7 @@ void pairAlign (const PointCloud::Ptr cloud_src, const PointCloud::Ptr cloud_tgt
 	
   }
 
-  std::cout << " \nTransformation ended in " << time.toc () << "ms, score is  " << icp.getFitnessScore () << std::endl;
+  std::cout << " \nTransformation ended in " << time.toc () << "ms\n" << std::endl; //, score is  " << icp.getFitnessScore() << std::endl;
   
 	//
   // Get the transformation from target to source
@@ -237,16 +237,22 @@ int main (int argc, char** argv)
     GlobalTransform = GlobalTransform * pairTransform;
     
     		//save aligned pair, transformed into the first cloud's frame
+    PCL_INFO ("Saving result...\n");
     std::stringstream ss;
     ss << i << ".pcd";
     pcl::io::savePCDFile (ss.str (), *result, true);
+    PCL_INFO ("DONE\n");
     
+    /*
     	// Compute the Hausdorff distance
 	pcl::console::print_highlight ("Hausdorff\n");
 	compute (target, source);
+	*/
 	
+	/*
 	pcl::console::print_highlight ("Visualisation \n");
 	vizu (source, target, result, 1);
+	*/
 
   }
 }
