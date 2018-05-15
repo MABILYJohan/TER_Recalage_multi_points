@@ -54,9 +54,7 @@ int main (int argc, char *argv[])
 	std::cout << " loading cloud target " << std::endl;
 	pcl::PointCloud<pcl::PointXYZ>::Ptr BIGcloud_target = loadCloud(argv[2]); 
 	
-	//
 	// Downsample for consistency and speed
-	// \note enable this for large datasets
 	pcl::console::print_highlight ("DownSampling...\n");
 	pcl::PointCloud<pcl::PointXYZ> cloud_source = downSample_cloud (BIGcloud_source);
 	pcl::PointCloud<pcl::PointXYZ> cloud_target = downSample_cloud (BIGcloud_target);
@@ -64,13 +62,20 @@ int main (int argc, char *argv[])
 	pcl::console::TicToc time;
 	time.tic ();
 	
-	pcl::console::print_highlight ("iterative closest point...\n");
-	pcl::IterativeClosestPoint<pcl::PointXYZ, pcl::PointXYZ> icp;
+	////////////////////////////////////////////////////////////////////
+	// ICP //
 	
 	PointCloud<PointXYZ>::Ptr src (new PointCloud<PointXYZ>);
 	copyPointCloud (cloud_source, *src);
 	PointCloud<PointXYZ>::Ptr tgt (new PointCloud<PointXYZ>);
 	copyPointCloud (cloud_target, *tgt);
+	
+	pcl::console::print_highlight ("iterative closest point...\n");
+	pcl::IterativeClosestPoint<pcl::PointXYZ, pcl::PointXYZ> icp;
+	
+	// Set the input source and target
+	icp.setInputSource (src);
+	icp.setInputTarget (tgt);
 	
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_source_registered (new PointCloud<PointXYZ>);;
 	copyPointCloud (*src, *cloud_source_registered);
@@ -95,27 +100,27 @@ int main (int argc, char *argv[])
 	//~ if (argv[6]!=NULL && atoi(argv[6])>0)	difDistEpsilon = atoi(argv[6]);
 	//~ icp.setEuclideanFitnessEpsilon (difDistEpsilon);
 	
-	// Set the input source and target
-	//~ icp.setInputSource (cloud_source_registered);
-	icp.setInputSource (src);
-	icp.setInputTarget (tgt);
+	std::cout << " maxCorDist(" << maxCorDist <<")\n" 
+				<< " maxIterations(" << iterations <<")\n" 
+				<< std::endl;
 	
 	// Perform the alignment
+	std::cout << " Alignement " << std::endl;
 	icp.align (*cloud_source_registered);
 	if (!icp.hasConverged ()) {
 		PCL_ERROR ("\nICP has not converged.\n");
 		return (-1);
 	}
 	
-	//~ std::cout << " \nICP has converged in " << time.toc () << "ms, score is  " << icp.getFitnessScore () << std::endl;
+	////////////////////////////////////////////////////////////////////
+	// OUTPUT //
+	
 	print_info ("ICP has converged with score of "); print_value ("%f", icp.getFitnessScore ()); print_info (" in "); print_value ("%g", time.toc ()); print_info (" ms : \n");
 	// Obtain the transformation that aligned cloud_source to cloud_source_registered
 	Eigen::Matrix4f transformation_matrix = icp.getFinalTransformation();
 	
-	std::cout << " Matrix " << std::endl;
+	std::cout << " FINAL " << std::endl;
 	print4x4Matrix (transformation_matrix);
-	
-	//~ pcl::transformPointCloud(cloud_source, *cloud_source_registered, transformation_matrix);
 	
 	// Compute the Hausdorff distance
 	pcl::console::print_highlight ("Hausdorff\n");
