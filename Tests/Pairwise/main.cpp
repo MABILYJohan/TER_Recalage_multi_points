@@ -155,7 +155,7 @@ void pairAlign (const PointCloud::Ptr cloud_src, const PointCloud::Ptr cloud_tgt
   Eigen::Matrix4f Ti = Eigen::Matrix4f::Identity (), prev, targetToSource;
   PointCloudWithNormals::Ptr reg_result = points_with_normals_src;
   reg.setMaximumIterations (2);
-  /*
+
   for (int i = 0; i < 30; ++i)
   {
     PCL_INFO ("Iteration Nr. %d.\n", i);
@@ -181,7 +181,7 @@ void pairAlign (const PointCloud::Ptr cloud_src, const PointCloud::Ptr cloud_tgt
     
     prev = reg.getLastIncrementalTransformation ();
 	
-  }*/
+  }
 
   std::cout << " \nTransformation ended in " << time.toc () << "ms, score is  " << icp.getFitnessScore () << std::endl;
   
@@ -225,9 +225,6 @@ int main (int argc, char** argv)
   {
     source = data[i-1].cloud;
     target = data[i].cloud;
-
-    // Add visualization data
-    //showCloudsLeft(source, target);
 
     PointCloud::Ptr temp (new PointCloud);
     PCL_INFO ("Aligning %s (%d) with %s (%d).\n", data[i-1].f_name.c_str (), source->points.size (), data[i].f_name.c_str (), target->points.size ());
