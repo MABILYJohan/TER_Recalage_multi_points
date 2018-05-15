@@ -1,8 +1,6 @@
 
 #include "utils_pcl.h"
 
-
-
 //convenient structure to handle our pointclouds
 struct PCD
 {
@@ -241,17 +239,17 @@ int main (int argc, char** argv)
     //update the global transform
     GlobalTransform = GlobalTransform * pairTransform;
     
+    		//save aligned pair, transformed into the first cloud's frame
+    std::stringstream ss;
+    ss << i << ".pcd";
+    pcl::io::savePCDFile (ss.str (), *result, true);
+    
     	// Compute the Hausdorff distance
 	pcl::console::print_highlight ("Hausdorff\n");
 	compute (target, source);
 	
 	pcl::console::print_highlight ("Visualisation \n");
 	vizu (source, target, result, 1);
-
-		//save aligned pair, transformed into the first cloud's frame
-    std::stringstream ss;
-    ss << i << ".pcd";
-    pcl::io::savePCDFile (ss.str (), *result, true);
 
   }
 }
