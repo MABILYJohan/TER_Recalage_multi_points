@@ -58,7 +58,7 @@ int main (int argc, char *argv[])
 {
 	if (argv[1] != NULL && strcmp(argv[1], "-h")==0) {
 		std::cout << " \nUsage  " << std::endl;
-		printf ("%s file1.stl/pcd file2.stl/pcd\n\n", argv[0]);
+		printf ("%s source1.stl/pcd source2.stl/pcd target1.stl/pcd target2.stl/pcd\n\n", argv[0]);
 		exit (0);
 	}
 	
