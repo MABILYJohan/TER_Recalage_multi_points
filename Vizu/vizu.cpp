@@ -61,14 +61,14 @@ int main(int argc, char *argv[])
 	
 	pcl::visualization::PCLVisualizer viewer ("viewer");
 	// The color we will be using
-	float bckgr_gray_level = 0.0;  // Black
+	float bckgr_gray_level = 1.0;  // Black
 	float txt_gray_lvl = 1.0 - bckgr_gray_level;
 	
 	pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZRGB> mycloud_color_h 
 		(mycloud,
-		 (int) 255 * txt_gray_lvl,
-		 (int) 255 * txt_gray_lvl, 
-		 (int) 255 * txt_gray_lvl);
+		 (int) 255,
+		 (int) 0, 
+		 (int) 0);
 	viewer.addPointCloud (mycloud, mycloud_color_h, "mycloud");
 	viewer.setBackgroundColor (bckgr_gray_level, bckgr_gray_level, bckgr_gray_level);
 	viewer.setCameraPosition (-3.68332, 2.94092, 5.71266, 0.289847, 0.921947, -0.256907, 0);

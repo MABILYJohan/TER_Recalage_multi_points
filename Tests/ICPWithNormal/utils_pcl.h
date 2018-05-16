@@ -166,11 +166,11 @@ void vizu (PointCloud<PointXYZ> cloud_source,
 	viewer.addText ("Black: cloud target", 10, 15, 16, bckgr_gray_level, bckgr_gray_level, bckgr_gray_level, "icp_info_2", v2);
 	viewer.addText ("Black: cloud target\nGreen: cloud source", 10, 15, 16, bckgr_gray_level, bckgr_gray_level, bckgr_gray_level, "icp_info_1", v1);
 	viewer.addText ("Green: cloud source", 10, 15, 16, bckgr_gray_level, bckgr_gray_level, bckgr_gray_level, "icp_info_4", v4);
-	viewer.addText ("Black: cloud target\nRed: ICP aligned point cloud", 10, 15, 16, bckgr_gray_level, bckgr_gray_level, bckgr_gray_level, "icp_info_3", v3);	
-	std::stringstream ss;
+	viewer.addText ("Black: cloud target\nRed: aligned point cloud", 10, 15, 16, bckgr_gray_level, bckgr_gray_level, bckgr_gray_level, "icp_info_3", v3);	
+	/*std::stringstream ss;
 	ss << iterations;
 	std::string iterations_cnt = "ICP iterations = " + ss.str ();
-	viewer.addText (iterations_cnt, 10, 60, 16, bckgr_gray_level, bckgr_gray_level, bckgr_gray_level, "iterations_cnt", v2);
+	viewer.addText (iterations_cnt, 10, 60, 16, bckgr_gray_level, bckgr_gray_level, bckgr_gray_level, "iterations_cnt", v2);*/
 	
 	// Set background color
 	viewer.setBackgroundColor (255, 255, 255, v1);

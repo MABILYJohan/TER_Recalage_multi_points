@@ -142,9 +142,9 @@ void vizu (PointCloud<PointXYZ> cloud_source,
 	// Original point cloud is black
 	pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> cloud_tr_color_h 
 		(cloud_target_vizu,
-		 bckgr_gray_level,
-		 bckgr_gray_level, 
-		 bckgr_gray_level);
+		 0,
+		 255, 
+		 0);
 	viewer.addPointCloud (cloud_target_vizu, cloud_tr_color_h, "cloud_tr_v1", v1);
 	viewer.addPointCloud (cloud_target_vizu, cloud_tr_color_h, "cloud_tr_v2", v2);
 	// Transformed point cloud is green
@@ -155,12 +155,12 @@ void vizu (PointCloud<PointXYZ> cloud_source,
 	viewer.addPointCloud (cloud_icp_vizu, cloud_icp_color_h, "cloud_icp_v2", v2);
 	
 	// Adding text descriptions in each viewport
-	viewer.addText ("Black: cloud target\nGreen: cloud source", 10, 15, 16, bckgr_gray_level, bckgr_gray_level, bckgr_gray_level, "icp_info_1", v1);
-	viewer.addText ("Black: cloud target\nRed: ICP aligned point cloud", 10, 15, 16, bckgr_gray_level, bckgr_gray_level, bckgr_gray_level, "icp_info_2", v2);	
+	viewer.addText ("Black: cloud target\nGreen: cloud source", 10, 15, 16, 255, 255, 255, "icp_info_1", v1);
+	viewer.addText ("Black: cloud target\nRed: ICP aligned point cloud", 10, 15, 16, 255, 255, 255, "icp_info_2", v2);	
 	std::stringstream ss;
 	ss << iterations;
 	std::string iterations_cnt = "ICP iterations = " + ss.str ();
-	viewer.addText (iterations_cnt, 10, 60, 16, bckgr_gray_level, bckgr_gray_level, bckgr_gray_level, "iterations_cnt", v2);
+	viewer.addText (iterations_cnt, 10, 60, 16, 255, 255, 255, "iterations_cnt", v2);
 	
 	// Set background color
 	viewer.setBackgroundColor (255, 255, 255, v1);
